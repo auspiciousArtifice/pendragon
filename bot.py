@@ -1,20 +1,31 @@
 import discord
-from dotenv import load_dotenv
 import os
+from discord.ext import commands
+from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-client = discord.Client()
 
-@client.event
+bot = commands.Bot(command_prefix='$')
+
+@bot.event
 async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
+    print(f'We have logged in as {bot.user.name}')
 
-@client.event
-async def on_message(message):
-    if str(message.channel).lower() == 'avalon-bot-testing':
-        print('Discord channel sent this message: ' + message.content)
-        if message.content.startswith('$milady'):
-            await message.channel.send('Hello!')
+@bot.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
+async def gather(ctx):
+    await ctx.send('\'gather\' command called')
 
-client.run(TOKEN)
+@bot.command(name='begin', help='Begins game session if enough players have joined')
+async def begin(ctx):
+    await ctx.send('\'begin\' command called')
+
+@bot.command(name='join', help='Adds user to current game session')
+async def join(ctx):
+    await ctx.send('\'join\' command called')
+
+@bot.command(name='unjoin', help='Removes user from current game session')
+async def unjoin(ctx):
+    await ctx.send('\'unjoin\' command called')
+
+bot.run(TOKEN)

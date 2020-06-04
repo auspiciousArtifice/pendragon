@@ -13,7 +13,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
     print('Discord channel sent this message: ' + message.content)
-    if message.content.startswith('$hello'):
+    if message.content.startswith('$milady'):
         await message.channel.send('Hello!')
 
 client.run(TOKEN)

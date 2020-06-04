@@ -12,6 +12,10 @@ bot = commands.Bot(command_prefix='$')
 async def on_ready():
     print(f'We have logged in as {bot.user.name}')
 
+@bot.command(name='rules', help='Displays the rules of the game')
+async def rules(ctx):
+    await ctx.send('\'rules\' command called')
+
 @bot.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
 async def gather(ctx):
     await ctx.send('\'gather\' command called')

@@ -10,9 +10,6 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 pen = commands.Bot(command_prefix='$')
 
-game_created = False
-host = None
-players = []
 voting = threading.Lock()
 questers = []
 voted = []
@@ -99,7 +96,7 @@ async def nominate(ctx, *args):
         if(len(args) > (current_quest.LENGTH - len(questers)) ):
             await ctx.send('Error: attempting to add too many players to quest.')
             return
-        for quester in args: 
+        for quester in args:
             if(quester in questers):
                 await ctx.send('Error: one of these players have already been added to the quest.')
                 return
@@ -138,7 +135,7 @@ async def vote(ctx, *args):
             return
         if(user_vote is not 'yes' or user_vote is not 'no'):
             await ctx.send('Error: \'vote\' must be yes or no.')
-            return 
+            return
         votes += check_user_vote(user_vote)
         voted.append(ctx.author)
         if(check_voted()):
@@ -160,10 +157,10 @@ async def check_voted():
     global voted
     global players
     voting.acquire()
-    try:        
+    try:
         if(len(voted) == len(players)): #everyone voted
             #Reset state back to original
-            voted = 0 
+            voted = 0
             result = True #votes are done
         else:
             result = False #votes are still being taken

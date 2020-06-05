@@ -131,8 +131,8 @@ class PenCog(commands.Cog):
                     self.session.change_state(GameState.QUESTING)
                 else:
                     self.session.change_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
-                    #implement King
-                    #implement doom counter
+                    #TODO: implement King
+                    #TODO: implement doom counter
                 return
         else:
             pass #no vote in progress

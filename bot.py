@@ -38,7 +38,7 @@ async def join(ctx):
     await ctx.send('\'join\' command called')
     if game_created:
         player = str(ctx.author)
-        if player in players:
+        if not player in players:
             players.append(player)
         else:
             await ctx.send(f'{player} is already in the game! Use the command $leave to leave the game.')

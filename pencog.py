@@ -6,8 +6,9 @@ class PenCog(commands.Cog):
         self.pen = pen
         self.session = None
 
+    @commands.Cog.listener()
     async def on_ready(self):
-        print(f'We have logged in as {pen.user.name}')
+        print(f'We have logged in as {self.pen.user.name}')
 
     @commands.command(name='rules', help='Displays the rules of the game')
     async def rules(self, ctx):

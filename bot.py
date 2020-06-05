@@ -166,5 +166,4 @@ async def vote_result():
     session.votes = 0
     return result
 
-
 pen.run(TOKEN)

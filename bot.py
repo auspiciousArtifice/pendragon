@@ -1,7 +1,6 @@
 import discord
-import threading
 import os
-from avalon import Session
+from avalon import Session, GameState, Vote
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -39,7 +38,8 @@ async def disband(ctx):
     await ctx.send('\'disband\' command called')
     if author == session.get_host():
         await ctx.send(f'{author}\'s game has been disbanded')
-        session = None
+        #This is fine for now because we have one game per bot for now. This will be changed once we have more games/sessions.
+        session = None 
     else:
         await ctx.send(f'{author}, you have not yet created a game session. Please use the \'gather\' command to create one.')
 
@@ -97,93 +97,84 @@ async def players(ctx):
 
 @pen.command(name='nominate', help='Nominates players towards current quest.')
 async def nominate(ctx, *args):
-    global game_created
-    global questers
-    global current_quest
-    if(game_created):
+    if(session is not None):
         if(len(args) < 1):
             await ctx.send('Error: Need to nominate at least one player.')
             return
-        if(len(args) > (current_quest.LENGTH - len(questers)) ):
+        if(len(args) > (session.current_quest - len(session.questers)) ):
             await ctx.send('Error: attempting to add too many players to quest.')
             return
         for quester in args:
-            if(quester in questers):
+            if(quester in session.questers):
                 await ctx.send('Error: one of these players have already been added to the quest.')
                 return
             else:
-                questers.append(quester)
+                session.questers.append(quester)
 
 @pen.command(name='startvote', help='Starts the voting for the current quest.')
 async def startvote(ctx):
-    global game_created
-    global questers
-    global current_quest
-    if(game_created):
-        if(len(questers) != current_quest.LENGTH):
+    if(session is not None):
+        if(len(session.questers) != session.current_quest):
             await ctx.send('Error: Not enough players to start quest.')
             return
         else:
+            session.change_state(GameState.TEAM_VOTE)
             #move state to voting state
             #game logic loop here
             return
 
 @pen.command(name='vote', help='Records responses for the current vote')
 async def vote(ctx, *args):
-    global game_created
-    global voting
-    global votes
-    global voted
     await ctx.send('\'vote\' command called')
-    if(game_created and voting):
+    if(session is not None and session.get_state == GameState.TEAM_VOTE):
         if(args):
             user_vote = args[0].lower()
-        if(ctx.author in voted):
+        if(ctx.author in session.voted):
             await ctx.send('Error: you already voted!')
             return
         if(len(args) != 1):
             await ctx.send('Error: invalid number of arguments for \'vote\' command.')
             return
-        if(user_vote is not 'yes' or user_vote is not 'no'):
+        if(user_vote is not 'yes' or user_vote is not 'yea' or user_vote is not 'nay' or user_vote is not 'no'):
             await ctx.send('Error: \'vote\' must be yes or no.')
             return
-        votes += check_user_vote(user_vote)
-        voted.append(ctx.author)
+        session.votes += check_user_vote(user_vote)
+        session.voted.append(ctx.author)
         if(check_voted()):
             await ctx.send('Votes are done!')
             # delete vote command message by user
-            # logic here for game loop
-            # return vote_result()
+            if(vote_result):
+                session.change_state(GameState.QUESTING)
+            else:
+                session.change_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                #implement King
+                #implement doom counter
             return
     else:
         pass #no vote in progress
 
 async def check_user_vote(user_vote):
-    #convert user_vote to enum
-    #return Vote.PASS or Vote.FAIL
-    pass
+    if(user_vote == 'yes' or user_vote == 'yea'):
+        return Vote.YEA
+    else:
+        return Vote.NAY
 
 async def check_voted():
-    global voting
-    global voted
-    global players
-    voting.acquire()
+    session.voting.acquire()
     try:
-        if(len(voted) == len(players)): #everyone voted
+        if(len(session.voted) == len(session.players)): #everyone voted
             #Reset state back to original
-            voted = 0
+            session.voted = 0
             result = True #votes are done
         else:
             result = False #votes are still being taken
     finally:
-        voting.release()
+        session.voting.release()
         return result
 
 async def vote_result():
-    global votes
     result = (votes > 0)
-    votes = 0
+    session.votes = 0
     return result
-
 
 pen.run(TOKEN)

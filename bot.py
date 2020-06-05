@@ -72,6 +72,8 @@ async def players(ctx):
 @pen.command(name='nominate', help='Nominates players towards current quest.')
 async def nominate(ctx, *args):
     global game_created
+    global questers
+    global current_quest
     if(game_created):
         if(len(args) < 1):
             await ctx.send('Error: Need to nominate at least one player.')
@@ -89,6 +91,8 @@ async def nominate(ctx, *args):
 @pen.command(name='startvote', help='Starts the voting for the current quest.')
 async def startvote(ctx):
     global game_created
+    global questers
+    global current_quest
     if(game_created):
         if(len(questers) != current_quest.LENGTH):
             await ctx.send('Error: Not enough players to start quest.')

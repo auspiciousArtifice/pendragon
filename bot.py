@@ -1,4 +1,5 @@
 import discord
+import threading
 import os
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -11,6 +12,10 @@ pen = commands.Bot(command_prefix='$')
 game_created = False
 host = None
 players = []
+voting = threading.Lock()
+questers = []
+voted = []
+votes = 0
 
 @pen.event
 async def on_ready():
@@ -63,5 +68,92 @@ async def players(ctx):
         await ctx.send(str(players))
     else:
         await ctx.send('No game session created yet.')
+
+@pen.command(name='nominate', help='Nominates players towards current quest.')
+async def nominate(ctx, *args):
+    global game_created
+    if(game_created):
+        if(len(args) < 1):
+            await ctx.send('Error: Need to nominate at least one player.')
+            return
+        if(len(args) > (current_quest.LENGTH - len(questers)) ):
+            await ctx.send('Error: attempting to add too many players to quest.')
+            return
+        for quester in args: 
+            if(quester in questers):
+                await ctx.send('Error: one of these players have already been added to the quest.')
+                return
+            else:
+                questers.append(quester)
+
+@pen.command(name='startvote', help='Starts the voting for the current quest.')
+async def startvote(ctx):
+    global game_created
+    if(game_created):
+        if(len(questers) != current_quest.LENGTH):
+            await ctx.send('Error: Not enough players to start quest.')
+            return
+        else:
+            #move state to voting state
+            #game logic loop here
+            return
+
+@pen.command(name='vote', help='Records responses for the current vote')
+async def vote(ctx, *args):
+    global game_created
+    global voting
+    global votes
+    global voted
+    await ctx.send('\'vote\' command called')
+    if(game_created and voting):
+        if(args):
+            user_vote = args[0].lower()
+        if(ctx.author in voted):
+            await ctx.send('Error: you already voted!')
+            return
+        if(len(args) != 1):
+            await ctx.send('Error: invalid number of arguments for \'vote\' command.')
+            return
+        if(user_vote is not 'yes' or user_vote is not 'no'):
+            await ctx.send('Error: \'vote\' must be yes or no.')
+            return 
+        votes += check_user_vote(user_vote)
+        voted.append(ctx.author)
+        if(check_voted()):
+            await ctx.send('Votes are done!')
+            # delete vote command message by user
+            # logic here for game loop
+            # return vote_result()
+            return
+    else:
+        pass #no vote in progress
+
+async def check_user_vote(user_vote):
+    #convert user_vote to enum
+    #return Vote.PASS or Vote.FAIL
+    pass
+
+async def check_voted():
+    global voting
+    global voted
+    global players
+    voting.acquire()
+    try:        
+        if(len(voted) == len(players)): #everyone voted
+            #Reset state back to original
+            voted = 0 
+            result = True #votes are done
+        else:
+            result = False #votes are still being taken
+    finally:
+        voting.release()
+        return result
+
+async def vote_result():
+    global votes
+    result = (votes > 0)
+    votes = 0
+    return result
+
 
 pen.run(TOKEN)

@@ -1,11 +1,13 @@
 from enum import Enum
+from threading import Lock
 
 class GameState(Enum):
     CREATED = 0
-    PICK_QUEST = 1
-    QUESTING = 2
-    LAST_STAND = 3
-    GAME_OVER = 4
+    NOMINATE = 1
+    TEAM_VOTE = 2
+    QUESTING = 3
+    LAST_STAND = 4
+    GAME_OVER = 5
 
 class Vote(Enum):
     NAY = -1
@@ -19,7 +21,11 @@ class Session:
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
-        self.votes = {}
+        self.questers = []
+        self.doom_counter = 0
+        self.votes = 0
+        self.voted = []
+        self.voting = Lock()
 
     def get_host(self):
         return self.host

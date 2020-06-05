@@ -45,19 +45,27 @@ async def disband(ctx):
 
 @pen.command(name='begin', help='Begins game session if enough players have joined')
 async def begin(ctx):
+    global session
     await ctx.send('\'begin\' command called')
-    # TODO: Implement state transition of session to PICK_QUEST if session exists
+    if session is not None:
+        if session.start_game():
+            await ctx.send(f'{session.get_host()}\'s game has begun!')
+        else:
+            await ctx.send('Game could not be started')
 
 @pen.command(name='join', help='Adds user to current game session')
 async def join(ctx):
     global session
     await ctx.send('\'join\' command called')
     if not session is None:
-        player = str(ctx.author)
-        if not player in session.get_players():
-            session.add_player(player)
+        author = str(ctx.author)
+        if not author in session.get_players():
+            if session.add_player(author):
+                await ctx.send(f'{author} was successfully added to {session.get_host()}\'s game.')
+            else:
+                await ctx.send(f'Game is already in session. Can not join {session.get_host()}\'s game.')
         else:
-            await ctx.send(f'{player} is already in the game! Use the command $leave to leave the game.')
+            await ctx.send(f'{author} is already in the game! Use the command $leave to leave the game.')
     else:
         await ctx.send('Session hasn\'t been created yet! Use the \'gather\' command to create one.')
 
@@ -67,11 +75,14 @@ async def unjoin(ctx):
     global session
     await ctx.send('\'leave\' command called')
     author = str(ctx.author)
-    if not session is None:
+    if session is not None:
         if author == session.get_host():
             await ctx.send(f'{author} can\'t leave the game, as they are the host')
         elif author in session.get_players():
-            session.remove_player(author)
+            if session.remove_player(author):
+                await ctx.send(f'{author} was successfully added to {session.get_host()}\'s game.')
+            else:
+                await ctx.send(f'Game is already in session. Can not join {session.get_host()}\'s game.')
         else:
             await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
 
@@ -79,8 +90,8 @@ async def unjoin(ctx):
 async def players(ctx):
     global session
     await ctx.send('\'players\' command called')
-    if not session is None:
-        await ctx.send(str(session.get_players()))
+    if session is not None:
+        await ctx.send(str(list(session.get_players().keys())))
     else:
         await ctx.send('No game session created yet.')
 

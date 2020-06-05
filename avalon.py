@@ -28,10 +28,18 @@ class Session:
         return self.players
 
     def add_player(self, player):
-        self.players[player] = None
+        if self.get_state() == GameState.CREATED:
+            self.players[player] = None
+            return True
+        else:
+            return False
 
     def remove_player(self, player):
-        self.players.pop(player)
+        if self.get_state() == GameState.CREATED:
+            self.players.pop(player)
+            return True
+        else:
+            return False
 
     def get_num_players(self):
         return len(self.players)
@@ -41,6 +49,13 @@ class Session:
 
     def get_state(self):
         return self.state
+
+    def start_game(self):
+        if self.get_state() == GameState.CREATED:
+            self.change_state(GameState.PICK_QUEST)
+            return True
+        else:
+            return False
 
     def cast_vote(self, player_name, vote_type):
         votes[player_name] = vote_type

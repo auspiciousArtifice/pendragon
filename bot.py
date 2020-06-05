@@ -34,6 +34,7 @@ async def disband(ctx):
     await ctx.send('\'disband\' command called')
     if author == session.get_host():
         await ctx.send(f'{author}\'s game has been disbanded')
+        session = None
     else:
         await ctx.send(f'{author}, you have not yet created a game session. Please use the \'gather\' command to create one.')
 
@@ -64,8 +65,8 @@ async def unjoin(ctx):
     if not session is None:
         if author == session.get_host():
             await ctx.send(f'{author} can\'t leave the game, as they are the host')
-        elif author in players:
-            players.remove(author)
+        elif author in session.get_players():
+            session.remove_player(author)
         else:
             await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
 

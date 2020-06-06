@@ -58,7 +58,7 @@ class Session:
 
     def start_game(self):
         if self.get_state() == GameState.CREATED:
-            self.change_state(GameState.PICK_QUEST)
+            self.change_state(GameState.NOMINATE)
             return True
         else:
             return False

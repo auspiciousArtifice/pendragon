@@ -14,6 +14,20 @@ class PenCog(commands.Cog):
     async def rules(self, ctx):
         await ctx.send('Here is a link to the rules: https://tinyurl.com/ycf4jttk')
 
+    @commands.command(name='debug')
+    async def debug(self, ctx, arg):
+        await ctx.send('\'debug\' command called')
+        if self.session is not None:
+            if arg is not None or arg is 'gamestate':
+                await ctx.send('Current GameState is ' + self.session.get_state())
+        else:
+            await ctx.send('No session to debug.')
+
+    @debug.error
+    async def debug_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            pass #needs more than 0 arguments
+
     @commands.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
     async def gather(self, ctx):
         author = str(ctx.author)

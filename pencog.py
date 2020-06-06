@@ -38,6 +38,7 @@ class PenCog(commands.Cog):
         if self.session is not None:
             if self.session.start_game():
                 await ctx.send(f'{self.session.get_host()}\'s game has begun!')
+                await ctx.send(f'Merlin, here are the list of Mordred\'s minions: {self.session.merlins_watch_list}')
             else:
                 await ctx.send('Game could not be started')
 

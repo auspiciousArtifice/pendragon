@@ -1,4 +1,4 @@
-from avalon import Session, GameState, Vote
+from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
 
 class PenCog(commands.Cog):
@@ -38,7 +38,22 @@ class PenCog(commands.Cog):
         if self.session is not None:
             if self.session.start_game():
                 await ctx.send(f'{self.session.get_host()}\'s game has begun!')
-                await ctx.send(f'Merlin, here are the list of Mordred\'s minions: {self.session.merlins_watch_list}')
+                for player in self.session.players:
+                    role = self.session.players[player]
+                    role_name = role.name.lower().replace('_', ' ')
+                    if role == Role.GOOD_GUY:
+                        role_name = 'a ' + role_name
+                    elif role == Role.EVIL_GUY:
+                        role_name = 'an ' + role_name
+                    else:
+                        role_name = role_name.capitalize()
+                    await ctx.send(f'{player}, you are {role_name}')
+                    if role == Role.MERLIN:
+                        await ctx.send(f'The list of bad players (excluding Mordred) is {self.session.merlins_watch_list}')
+                    if player in self.session.evil_watch_list:
+                        other_evil_guys = list(self.session.evil_watch_list)
+                        other_evil_guys.remove(player)
+                        await ctx.send(f'The list of other bad players (excluding Oberon) is {other_evil_guys}')
             else:
                 await ctx.send('Game could not be started')
 

@@ -16,15 +16,15 @@ class Vote(Enum):
 
 class Role(Enum):
     GOOD_GUY = 0
-    EVIL_GUY = 1
+    EVIL_GUY = 11
     MERLIN = 2
-    ASSASSIN = 3
+    ASSASSIN = 13
     PERCIVAL = 4
-    MORGANA = 5
-    MORDRED = 6
+    MORGANA = 15
+    MORDRED = 16
     OBERON = 7
     GOOD_LANCELOT = 8
-    EVIL_LANCELOT = 9
+    EVIL_LANCELOT = 19
 
 class Session:
     def __init__(self, host):
@@ -40,6 +40,8 @@ class Session:
         self.voted = []
         self.voting = Lock()
         self.merlins_watch_list = []
+        self.evil_watch_list = []
+
     def get_host(self):
         return self.host
 
@@ -74,7 +76,7 @@ class Session:
             players = list(self.players.keys())
             #the for loop below exists for debugging currently. MUST BE REMOVED LATER	
             for i in range(len(players), 5):
-                players.append("Player_"+str(i))
+                players.append('Player_'+str(i))
             #population of roles function. may put in another function later
             roles = [Role.MERLIN, Role.ASSASSIN]
             inverter = True
@@ -86,13 +88,15 @@ class Session:
                 inverter = not inverter
             if len(roles) % 2 == 0:
                 roles[-1] = Role.GOOD_GUY
-            #assigning roles to players and populating merlin's watch list
+            #assigning roles to players and populating watch lists
             for player in players:
                 player_role = random.choice(roles)
                 self.players[player] = player_role
                 roles.remove(player_role)
                 if player_role.value % 2 == 1:
                     self.merlins_watch_list.append(player)
+                if player_role.value > 9:
+                    self.evil_watch_list.append(player)
             print(self.players)
             self.change_state(GameState.NOMINATE)
             return True

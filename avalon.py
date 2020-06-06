@@ -11,6 +11,18 @@ class Vote(Enum):
     NAY = -1
     YEA = 1
 
+class Role(Enum):
+    GOOD_GUY = 1
+    BAD_GUY = -1
+    MERLIN = 1
+    ASSASSIN = -1
+    PERCIVAL = 1
+    MORGANA = -1
+    MORDRED = -1
+    OBERON = -1
+    GOOD_LANCELOT = 1
+    BAD_LANCELOT = -1
+
 class Session:
     def __init__(self):
         self.players = {}

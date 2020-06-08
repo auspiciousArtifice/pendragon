@@ -138,6 +138,8 @@ class PenCog(commands.Cog):
                 await ctx.send('Error: Not enough players to start quest.')
             else:
                 self.session.set_state(GameState.TEAM_VOTE)
+        else:
+            await ctx.send('We are currently not picking any players for the quest!')
 
     @commands.command(name='turn', help='Shows the current turn and turn order.')
     async def turn(self, ctx):

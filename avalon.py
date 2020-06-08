@@ -230,6 +230,12 @@ class Session:
     def start_quest(self):
         pass #TODO: check if doom_counter == 5
 
+    def quest_action(self):
+        pass #TODO: pass or fail quest.
+
+    def check_quest(self):
+        pass #TODO: calculate quest outcome
+
     def start_game(self):
         if self.get_state() == GameState.CREATED:
             # After game starts

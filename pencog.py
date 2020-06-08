@@ -115,16 +115,21 @@ class PenCog(commands.Cog):
     @commands.command(name='nominate', help='Nominates players towards current quest.')
     async def nominate(self, ctx, *args):
         if self.session:
-            if len(args) < 1 :
-                await ctx.send('Error: Need to nominate at least one player.')
-            if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
-                await ctx.send('Error: attempting to add too many players to quest.')
-            for quester in args:
-                if not self.session.add_quester(quester):
-                    await ctx.send('Error: one of these players have already been added to the quest.')
-            if self.session.get_questers_required() == len(self.session.get_questers()):
-                #TODO: Mutex needed for nominating players.
-                self.session.change_state(GameState.TEAM_VOTE)
+            if self.session.get_state() == GameState.NOMINATE:
+                if len(args) < 1 :
+                    await ctx.send('Error: Need to nominate at least one player.')
+                if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
+                    await ctx.send('Error: attempting to add too many players to quest.')
+                for quester in args:
+                    if not self.session.add_quester(quester):
+                        await ctx.send(f'Error: could not add {quester} to quest.')
+                    else:
+                        await ctx.send(f'Added {quester} to quest.')
+                if self.session.get_questers_required() == len(self.session.get_questers()):
+                    #TODO: Mutex needed for nominating players.
+                    self.session.set_state(GameState.TEAM_VOTE)
+            else:
+                await ctx.send('We are currently not picking any players for the quest!')
 
     @commands.command(name='startvote', help='Starts the voting for the current quest.')
     async def startvote(self, ctx):
@@ -132,7 +137,7 @@ class PenCog(commands.Cog):
             if(len(self.session.get_questers()) != self.session.get_current_quest()):
                 await ctx.send('Error: Not enough players to start quest.')
             else:
-                self.session.change_state(GameState.TEAM_VOTE)
+                self.session.set_state(GameState.TEAM_VOTE)
 
     @commands.command(name='turn', help='Shows the current turn and turn order.')
     async def turn(self, ctx):
@@ -147,10 +152,10 @@ class PenCog(commands.Cog):
             await ctx.send(player_order)
 
     @commands.command(name='lady', help='Uses the Lady of the Lake to reveal an allegiance.')
-    async def lady(self, ctx, args):
+    async def lady(self, ctx, *args):
         #No mutex needed here because of almost idempotence. :)
         await ctx.send('\'lady\' command called')
-        if(len(args) != 1):
+        if len(args) != 1:
                 await ctx.send('Error: invalid number of arguments for \'lady\' command.')
         elif (self.session and self.session.get_state() == GameState.NOMINATE):
             if self.session.get_lady() == ctx.author:
@@ -177,16 +182,16 @@ class PenCog(commands.Cog):
                 # delete vote command message by user
                 if(self.vote_result()):
                     await ctx.send('Vote passes.')
-                    self.session.change_state(GameState.QUESTING)
+                    self.session.set_state(GameState.QUESTING)
                     self.session.set_doom_counter(0)
                 else:
                     if(self.session.get_doom_counter() == 5):
                         await ctx.send('Doom counter is 5, vote passes anyway.')
-                        self.session.change_state(GameState.QUESTING)
+                        self.session.set_state(GameState.QUESTING)
                         self.session.set_doom_counter(0)
                     else:
                         await ctx.send('Vote fails.')
-                        self.session.change_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                        self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                         self.session.increment_turn()
                         self.session.increment_doom_counter()
 

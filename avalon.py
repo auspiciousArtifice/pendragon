@@ -160,7 +160,7 @@ class Session:
     def add_player(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.CREATED:
-            if self.get_player(player) is not None:
+            if self.get_player(player) is None:
                 player_tuple = (player, None)
                 self.get_players().append(player_tuple)
                 return True
@@ -243,7 +243,7 @@ class Session:
             #     player_tuple[1] = select_random_role()
             #     # select_random_role takes a role from the list then excludes it for later selections
             # random.shuffle(players) # This is to determine turn order
-            self.change_state(GameState.NOMINATE)
+            self.set_state(GameState.NOMINATE)
             return True
         else:
             return False

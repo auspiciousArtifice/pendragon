@@ -20,7 +20,7 @@ class PenCog(commands.Cog):
         #await ctx.send(self.session)
         #print(self.session)
         print(arg)
-        if self.session is not None:
+        if self.session:
             if arg == 'gamestate':
                 await ctx.send(f'Current GameState is {self.session.get_state().name}')
                 print(f'Current GameState is {self.session.get_state().name}')
@@ -62,7 +62,7 @@ class PenCog(commands.Cog):
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
-        if self.session is not None:
+        if self.session:
             if self.session.start_game():
                 await ctx.send(f'{self.session.get_host()}\'s game has begun!')
             else:
@@ -72,7 +72,7 @@ class PenCog(commands.Cog):
     async def join(self, ctx):
         #TODO: Mutex needed here for joining.
         await ctx.send('\'join\' command called')
-        if not self.session is None:
+        if self.session:
             author = str(ctx.author)
             if self.session.get_player(author) is None:
                 if self.session.add_player(author):
@@ -90,7 +90,7 @@ class PenCog(commands.Cog):
         #TODO: Mutex needed here for leaving.
         await ctx.send('\'leave\' command called')
         author = str(ctx.author)
-        if self.session is not None:
+        if self.session:
             if author == self.session.get_host():
                 await ctx.send(f'{author} can\'t leave the game, as they are the host.')
             elif self.session.get_player(author):
@@ -104,7 +104,7 @@ class PenCog(commands.Cog):
     @commands.command(name='players', help='Lists the players in the current game session')
     async def players(self, ctx):
         await ctx.send('\'players\' command called')
-        if self.session is not None:
+        if self.session:
             player_list = ''
             for player in self.session.get_players():
                 player_list += f'{player[0]}\n' 
@@ -114,7 +114,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='nominate', help='Nominates players towards current quest.')
     async def nominate(self, ctx, *args):
-        if(self.session is not None):
+        if self.session:
             if len(args) < 1 :
                 await ctx.send('Error: Need to nominate at least one player.')
             if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
@@ -136,7 +136,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='turn', help='Shows the current turn and turn order.')
     async def turn(self, ctx):
-        if(self.session is not None):
+        if self.session:
             current_turn = self.session.get_turn()
             player_order = ''
             for i in range(0, self.session.get_num_players()):
@@ -152,7 +152,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'lady\' command called')
         if(len(args) != 1):
                 await ctx.send('Error: invalid number of arguments for \'lady\' command.')
-        elif (self.session is not None and self.session.get_state() == GameState.NOMINATE):
+        elif (self.session and self.session.get_state() == GameState.NOMINATE):
             if self.session.get_lady() == ctx.author:
                 #message ctx.author the allegiance of args[0]
                 self.session.set_lady(args[0])
@@ -161,7 +161,7 @@ class PenCog(commands.Cog):
     async def vote(self, ctx, *args):
         #TODO: Mutex needed here.
         await ctx.send('\'vote\' command called')
-        if(self.session is not None and self.session.get_state() == GameState.TEAM_VOTE):
+        if(self.session and self.session.get_state() == GameState.TEAM_VOTE):
             if(args):
                 user_vote = args[0].lower()
             if(ctx.author in self.session.voted):

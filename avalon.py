@@ -27,6 +27,7 @@ class Session:
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
+        self.questers_required = 0
         self.questers = []
         self.nominating = Lock()
         self.doom_counter = 0
@@ -53,12 +54,6 @@ class Session:
                 return self.players[i]
         return None
 
-    def get_quester(self, name):
-        for i in range(0, len(self.questers)):
-            if self.questers[i][0] == name:
-                return self.questers[i]
-        return None
-
     def get_role(self, player):
         return self.get_player(player)[1]
 
@@ -79,6 +74,9 @@ class Session:
 
     def get_current_quest(self):
         return self.current_quest
+    
+    def get_questers_required(self):
+        return self.get_questers_required
     
     def get_questers(self):
         return self.questers
@@ -104,6 +102,9 @@ class Session:
     def set_doom_counter(self, number):
         self.doom_counter = number
 
+    def set_questers_required(self, number):
+        self.questers_required = number
+
     def set_role(self, player, role):
         player_obj = self.get_player(player)
         player_obj[1] = role
@@ -127,12 +128,38 @@ class Session:
         self.turn += 1
         self.king = players[self.turn % len(self.players)]
 
+    def vote_result(self):
+        result = (self.get_votes() > 0)
+        self.set_votes(0)
+        return result
+
+    def check_user_vote(self, user_vote):
+        if(user_vote == 'yes' or user_vote == 'yea'):
+            return Vote.YEA
+        elif(user_vote == 'no' or user_vote == 'nay'):
+            return Vote.NAY
+        else:
+            return None
+
+    def check_voted(self):
+        self.voting.acquire()
+        try:
+            if(len(self.get_voted()) == len(self.get_players())): #everyone voted
+                #Reset state back to original
+                self.set_votes(0)
+                result = True #votes are done
+            else:
+                result = False #votes are still being taken
+        finally:
+            self.voting.release()
+            return result
+
     def add_player(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.CREATED:
             if self.get_player(player) is not None:
                 player_tuple = (player, None)
-                self.players.append(player_tuple)
+                self.get_players().append(player_tuple)
                 return True
             return False
         else:
@@ -141,9 +168,9 @@ class Session:
     def remove_player(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.CREATED:
-            for i in range(0, len(self.players)):
-                if self.players[i][0] == player:
-                    del self.players[i]
+            for i in range(0, len(self.get_players())):
+                if self.get_players()[i][0] == player:
+                    del self.get_players()[i]
                     return True
             return False
         else:
@@ -163,9 +190,9 @@ class Session:
     def remove_quester(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.NOMINATE:
-            for i in range(0, len(self.questers)):
-                if self.questers[i] == player:
-                    del self.questers[i]
+            for i in range(0, len(self.get_questers())):
+                if self.get_questers()[i] == player:
+                    del self.get_questers()[i]
                     return True
             return False
         else:
@@ -176,7 +203,7 @@ class Session:
         if self.get_state() == GameState.TEAM_VOTE:
             voted = self.get_voted().contains(player)
             if not voted:
-                self.get_voted.append(player)
+                self.get_voted().append(player)
                 return True
             return False
         else:
@@ -185,9 +212,9 @@ class Session:
     def remove_voter(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.TEAM_VOTE:
-            for i in range(0, len(self.voted)):
-                if self.voted[i] == player:
-                    del self.voted[i]
+            for i in range(0, len(self.get_voted())):
+                if self.get_voted()[i] == player:
+                    del self.get_voted()[i]
                     return True
             return False
         else:

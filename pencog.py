@@ -41,6 +41,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
     async def gather(self, ctx):
+        #TODO: Mutex needed here to bind to text channel
         author = str(ctx.author)
         await ctx.send('\'gather\' command called')
         await ctx.send(f'Now accepting players into {author}\'s game')
@@ -69,6 +70,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='join', help='Adds user to current game session')
     async def join(self, ctx):
+        #TODO: Mutex needed here for joining.
         await ctx.send('\'join\' command called')
         if not self.session is None:
             author = str(ctx.author)
@@ -85,6 +87,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='leave', help='Removes user from current game session')
     async def unjoin(self, ctx):
+        #TODO: Mutex needed here for leaving.
         await ctx.send('\'leave\' command called')
         author = str(ctx.author)
         if self.session is not None:
@@ -120,7 +123,7 @@ class PenCog(commands.Cog):
                 if not self.session.add_quester(quester):
                     await ctx.send('Error: one of these players have already been added to the quest.')
             if self.session.get_questers_required() == len(self.session.get_questers()):
-                #mutex again
+                #TODO: Mutex needed for nominating players.
                 self.session.change_state(GameState.TEAM_VOTE)
 
     @commands.command(name='startvote', help='Starts the voting for the current quest.')
@@ -145,6 +148,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='lady', help='Uses the Lady of the Lake to reveal an allegiance.')
     async def lady(self, ctx, args):
+        #No mutex needed here because of almost idempotence. :)
         await ctx.send('\'lady\' command called')
         if(len(args) != 1):
                 await ctx.send('Error: invalid number of arguments for \'lady\' command.')
@@ -155,6 +159,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='vote', help='Records responses for the current vote')
     async def vote(self, ctx, *args):
+        #TODO: Mutex needed here.
         await ctx.send('\'vote\' command called')
         if(self.session is not None and self.session.get_state() == GameState.TEAM_VOTE):
             if(args):

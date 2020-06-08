@@ -72,7 +72,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'join\' command called')
         if not self.session is None:
             author = str(ctx.author)
-            if not author in self.session.get_players():
+            if self.session.get_player(author) is None:
                 if self.session.add_player(author):
                     await ctx.send(f'{author} was successfully added to {self.session.get_host()}\'s game.')
                 else:
@@ -89,12 +89,12 @@ class PenCog(commands.Cog):
         author = str(ctx.author)
         if self.session is not None:
             if author == self.session.get_host():
-                await ctx.send(f'{author} can\'t leave the game, as they are the host')
-            elif author in self.session.get_players():
+                await ctx.send(f'{author} can\'t leave the game, as they are the host.')
+            elif self.session.get_player(author):
                 if self.session.remove_player(author):
                     await ctx.send(f'{author} was successfully removed from {self.session.get_host()}\'s game.')
                 else:
-                    await ctx.send(f'Game is already in session. Can not join {self.session.get_host()}\'s game.')
+                    await ctx.send(f'Can not leave {self.session.get_host()}\'s game.')
             else:
                 await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
 

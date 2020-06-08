@@ -19,6 +19,7 @@ class Session:
         self.host = host
         self.players = []
         self.joining = Lock()
+
         self.king = None
         self.lady = None
         self.turn = 0
@@ -148,17 +149,13 @@ class Session:
             return None
 
     def check_voted(self):
-        self.voting.acquire()
-        try:
-            if(len(self.get_voted()) == len(self.get_players())): #everyone voted
-                #Reset state back to original
-                self.set_votes(0)
-                result = True #votes are done
-            else:
-                result = False #votes are still being taken
-        finally:
-            self.voting.release()
-            return result
+        if(len(self.get_voted()) == len(self.get_players())): #everyone voted
+            #Reset state back to original
+            self.set_votes(0)
+            result = True #votes are done
+        else:
+            result = False #votes are still being taken
+        return result
 
     def add_player(self, player):
         # TODO: use mutex here

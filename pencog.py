@@ -52,35 +52,48 @@ class PenCog(commands.Cog):
     async def disband(self, ctx):
         author = str(ctx.author)
         await ctx.send('\'disband\' command called')
-        if author == self.session.get_host():
-            await ctx.send(f'{author}\'s game has been disbanded')
-            #This is fine for now because we have one game per bot for now. This will be changed once we have more games/sessions.
-            self.session = None
+        if self.session:
+            if author == self.session.get_host():
+                await ctx.send(f'{author}\'s game has been disbanded')
+                #This is fine for now because we have one game per bot for now. This will be changed once we have more games/sessions.
+                self.session = None
+            else:
+                await ctx.send(f'{author}, you have not yet created a game session. Please use the \'gather\' command to create one.')
         else:
-            await ctx.send(f'{author}, you have not yet created a game session. Please use the \'gather\' command to create one.')
+            await ctx.send('No session to disband! Use the \'$gather\' command to create one.')
+
 
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
         if self.session:
-            if self.session.start_game():
-                await ctx.send(f'{self.session.get_host()}\'s game has begun!')
-            else:
-                await ctx.send('Game could not be started')
+            self.session.joining.acquire()
+            try:
+                if self.session.start_game():
+                    await ctx.send(f'{self.session.get_host()}\'s game has begun!')
+                else:
+                    await ctx.send('Game could not be started')
+            finally:
+                self.session.joining.release()
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
     @commands.command(name='join', help='Adds user to current game session')
     async def join(self, ctx):
-        #TODO: Mutex needed here for joining.
         await ctx.send('\'join\' command called')
+        author = str(ctx.author)
         if self.session:
-            author = str(ctx.author)
-            if self.session.get_player(author) is None:
-                if self.session.add_player(author):
-                    await ctx.send(f'{author} was successfully added to {self.session.get_host()}\'s game.')
+            self.session.joining.acquire()
+            try:
+                if self.session.get_player(author) is None:
+                    if self.session.add_player(author):
+                        await ctx.send(f'{author} was successfully added to {self.session.get_host()}\'s game.')
+                    else:
+                        await ctx.send(f'Game is already in session. Can not join {self.session.get_host()}\'s game.')
                 else:
-                    await ctx.send(f'Game is already in session. Can not join {self.session.get_host()}\'s game.')
-            else:
-                await ctx.send(f'{author} is already in the game! Use the command $leave to leave the game.')
+                    await ctx.send(f'{author} is already in the game! Use the command $leave to leave the game.')
+            finally:
+                self.session.joining.release()
         else:
             await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
@@ -91,15 +104,22 @@ class PenCog(commands.Cog):
         await ctx.send('\'leave\' command called')
         author = str(ctx.author)
         if self.session:
-            if author == self.session.get_host():
-                await ctx.send(f'{author} can\'t leave the game, as they are the host.')
-            elif self.session.get_player(author):
-                if self.session.remove_player(author):
-                    await ctx.send(f'{author} was successfully removed from {self.session.get_host()}\'s game.')
+            self.session.joining.acquire()
+            try:
+                if author == self.session.get_host():
+                    await ctx.send(f'{author} can\'t leave the game, as they are the host.')
+                elif self.session.get_player(author):
+                    if self.session.remove_player(author):
+                        await ctx.send(f'{author} was successfully removed from {self.session.get_host()}\'s game.')
+                    else:
+                        await ctx.send(f'Can not leave {self.session.get_host()}\'s game.')
                 else:
-                    await ctx.send(f'Can not leave {self.session.get_host()}\'s game.')
-            else:
-                await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
+                    await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
+            finally:
+                self.session.joining.release()
+        else:
+            pass #No game in progress, deliberate separation for no message
+
 
     @commands.command(name='players', help='Lists the players in the current game session')
     async def players(self, ctx):
@@ -121,13 +141,14 @@ class PenCog(commands.Cog):
                 if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
                     await ctx.send('Error: attempting to add too many players to quest.')
                 for quester in args:
-                    if not self.session.add_quester(quester):
-                        await ctx.send(f'Error: could not add {quester} to quest.')
-                    else:
-                        await ctx.send(f'Added {quester} to quest.')
-                if self.session.get_questers_required() == len(self.session.get_questers()):
-                    #TODO: Mutex needed for nominating players.
-                    self.session.set_state(GameState.TEAM_VOTE)
+                    self.session.nominating.acquire()
+                    try:
+                        if self.session.add_quester(quester):
+                            await ctx.send(f'Added {quester} to quest.')
+                        else:
+                            await ctx.send(f'Error: could not add {quester} to quest.')
+                    finally:
+                        self.session.nominating.release()
             else:
                 await ctx.send('We are currently not picking any players for the quest!')
         else:
@@ -137,10 +158,14 @@ class PenCog(commands.Cog):
     async def startvote(self, ctx):
         if self.session:
             if self.session.get_state() == GameState.NOMINATE:
-                if(len(self.session.get_questers()) != self.session.get_current_quest()):
-                    await ctx.send('Error: Not enough players to start quest.')
+                if self.session.get_king() == ctx.author:
+                    if self.session.get_questers_required() == len(self.session.get_questers()):
+                        self.session.set_state(GameState.TEAM_VOTE)
+                        await ctx.send('Enough players have been nominated. Voting starts now.')
+                    else:
+                        await ctx.send('Not enough players to start vote.')
                 else:
-                    self.session.set_state(GameState.TEAM_VOTE)
+                    await ctx.send('Error: you cannot start the vote unless you are the King.')
             else:
                 await ctx.send('We are currently not picking any players for the quest!')
         else:
@@ -167,7 +192,7 @@ class PenCog(commands.Cog):
         if self.session:
             if len(args) != 1:
                     await ctx.send('Error: invalid number of arguments for \'lady\' command.')
-            elif (self.session.get_state() == GameState.NOMINATE):
+            elif self.session.get_state() == GameState.NOMINATE:
                 if self.session.get_lady() == ctx.author:
                     role = self.session.get_player(args[0])[1]
                     if role:
@@ -181,12 +206,12 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: you do not have the Lady of the Lake.')
         else:
             pass #No game in progress, deliberate separation for no message
+
     @commands.command(name='vote', help='Records responses for the current vote')
     async def vote(self, ctx, *arg):
-        #TODO: Mutex needed here.
         await ctx.send('\'vote\' command called')
         if self.session:
-            if(self.session.get_state() == GameState.TEAM_VOTE):
+            if self.session.get_state() == GameState.TEAM_VOTE:
                 if arg:
                     user_vote = arg.lower()
                 if self.session.get_voter(ctx.author):
@@ -195,25 +220,29 @@ class PenCog(commands.Cog):
                 if user_vote is None:
                     await ctx.send('Error: invalid vote string.')
                     return
-                self.session.votes += user_vote
-                self.session.get_voted().append(ctx.author)
-                if self.session.check_voted():
-                    await ctx.send('Votes are done!')
-                    # delete vote command message by user
-                    if(self.vote_result()):
-                        await ctx.send('Vote passes.')
-                        self.session.set_state(GameState.QUESTING)
-                        self.session.set_doom_counter(0)
-                    else:
-                        if(self.session.get_doom_counter() == 5):
-                            await ctx.send('Doom counter is 5, vote passes anyway.')
+                self.session.voting.acquire()
+                try:
+                    self.session.votes += user_vote
+                    self.session.get_voted().append(ctx.author)
+                    if self.session.check_voted():
+                        await ctx.send('Votes are done!')
+                        # delete vote command message by user
+                        if(self.vote_result()):
+                            await ctx.send('Vote passes.')
                             self.session.set_state(GameState.QUESTING)
                             self.session.set_doom_counter(0)
                         else:
-                            await ctx.send('Vote fails.')
-                            self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
-                            self.session.increment_turn()
-                            self.session.increment_doom_counter()
+                            if(self.session.get_doom_counter() == 5):
+                                await ctx.send('Doom counter is 5, vote passes anyway.')
+                                self.session.set_state(GameState.QUESTING)
+                                self.session.set_doom_counter(0)
+                            else:
+                                await ctx.send('Vote fails.')
+                                self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                                self.session.increment_turn()
+                                self.session.increment_doom_counter()
+                finally:
+                    self.session.voting.release()
             else:
                 ctx.send('No voting in progress.')
         else:
@@ -227,4 +256,3 @@ class PenCog(commands.Cog):
             print('Error: vote command received too many arguments.') #needs only 1 argument
         else:
             print(error)
-    #TODO: handle vote mulitple argument error

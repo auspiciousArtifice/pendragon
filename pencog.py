@@ -102,7 +102,10 @@ class PenCog(commands.Cog):
     async def players(self, ctx):
         await ctx.send('\'players\' command called')
         if self.session is not None:
-            await ctx.send(str(list(self.session.get_players().keys())))
+            player_list = ''
+            for player in self.session.get_players():
+                player_list += f'{player[0]}\n' 
+            await ctx.send(player_list)
         else:
             await ctx.send('No game session created yet.')
 
@@ -135,9 +138,9 @@ class PenCog(commands.Cog):
             player_order = ''
             for i in range(0, self.session.get_num_players()):
                 if i != current_turn:
-                    player_order += f'{self.session.get_players()[i][0]}'
+                    player_order += f'{self.session.get_players()[i][0]}\n'
                 else:
-                    player_order += f'{self.session.get_players()[i][0]} <- current turn'
+                    player_order += f'{self.session.get_players()[i][0]} <- current turn\n'
             await ctx.send(player_order)
 
     @commands.command(name='lady', help='Uses the Lady of the Lake to reveal an allegiance.')

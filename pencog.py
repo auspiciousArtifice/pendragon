@@ -145,7 +145,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'lady\' command called')
         if(len(args) != 1):
                 await ctx.send('Error: invalid number of arguments for \'lady\' command.')
-        elif (self.session is not None and self.session.get_state == GameState.NOMINATE):
+        elif (self.session is not None and self.session.get_state() == GameState.NOMINATE):
             if self.session.get_lady() == ctx.author:
                 #message ctx.author the allegiance of args[0]
                 self.session.set_lady(args[0])
@@ -153,7 +153,7 @@ class PenCog(commands.Cog):
     @commands.command(name='vote', help='Records responses for the current vote')
     async def vote(self, ctx, *args):
         await ctx.send('\'vote\' command called')
-        if(self.session is not None and self.session.get_state == GameState.TEAM_VOTE):
+        if(self.session is not None and self.session.get_state() == GameState.TEAM_VOTE):
             if(args):
                 user_vote = args[0].lower()
             if(ctx.author in self.session.voted):

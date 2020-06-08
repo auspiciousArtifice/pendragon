@@ -17,9 +17,18 @@ class PenCog(commands.Cog):
     @commands.command(name='debug')
     async def debug(self, ctx, arg):
         await ctx.send('\'debug\' command called')
+        #await ctx.send(self.session)
+        #print(self.session)
+        print(arg)
         if self.session is not None:
-            if arg is not None or arg is 'gamestate':
-                await ctx.send('Current GameState is ' + self.session.get_state())
+            if arg == 'gamestate':
+                await ctx.send(f'Current GameState is {self.session.get_state().name}')
+                print(f'Current GameState is {self.session.get_state().name}')
+            elif arg == 'players':
+                await ctx.send(f'Current players are {self.session.get_players()}')
+                print(f'Current players are {self.session.get_players()}')
+            else:
+                print('Error: Invalid argument.')
         else:
             await ctx.send('No session to debug.')
 
@@ -27,6 +36,8 @@ class PenCog(commands.Cog):
     async def debug_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             pass #needs more than 0 arguments
+        else:
+            print(error)
 
     @commands.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
     async def gather(self, ctx):
@@ -34,6 +45,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'gather\' command called')
         await ctx.send(f'Now accepting players into {author}\'s game')
         self.session = Session(author)
+        session.add_player(author)
 
     @commands.command(name='disband', help='Disbands current game session')
     async def disband(self, ctx):
@@ -68,7 +80,7 @@ class PenCog(commands.Cog):
             else:
                 await ctx.send(f'{author} is already in the game! Use the command $leave to leave the game.')
         else:
-            await ctx.send('Session hasn\'t been created yet! Use the \'gather\' command to create one.')
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
 
     @commands.command(name='leave', help='Removes user from current game session')
@@ -99,14 +111,11 @@ class PenCog(commands.Cog):
         if(self.session is not None):
             if(len(args) < 1):
                 await ctx.send('Error: Need to nominate at least one player.')
-                return
             if(len(args) > (self.session.current_quest - len(self.session.questers)) ):
                 await ctx.send('Error: attempting to add too many players to quest.')
-                return
             for quester in args:
                 if(quester in self.session.questers):
                     await ctx.send('Error: one of these players have already been added to the quest.')
-                    return
                 else:
                     self.session.questers.append(quester)
 
@@ -115,12 +124,26 @@ class PenCog(commands.Cog):
         if(self.session is not None):
             if(len(self.session.questers) != self.session.current_quest):
                 await ctx.send('Error: Not enough players to start quest.')
-                return
+
             else:
                 self.session.change_state(GameState.TEAM_VOTE)
                 #move state to voting state
                 #game logic loop here
-                return
+
+    @commands.command(name='turn', help='Shows the current turn and turn order.')
+    async def turn(self, ctx):
+        if(self.session is not None):
+            pass
+
+    @commands.command(name='lady', help='Uses the Lady of the Lake to reveal an allegiance.')
+    async def lady(self, ctx, args):
+        await ctx.send('\'lady\' command called')
+        if(len(args) != 1):
+                await ctx.send('Error: invalid number of arguments for \'vote\' command.')
+        elif (self.session is not None and self.session.get_state == GameState.NOMINATE):
+            if self.session.get_lady() == ctx.author:
+                #message ctx.author the allegiance of args[0]
+                self.session.set_lady(args[0])
 
     @commands.command(name='vote', help='Records responses for the current vote')
     async def vote(self, ctx, *args):
@@ -130,13 +153,10 @@ class PenCog(commands.Cog):
                 user_vote = args[0].lower()
             if(ctx.author in self.session.voted):
                 await ctx.send('Error: you already voted!')
-                return
             if(len(args) != 1):
                 await ctx.send('Error: invalid number of arguments for \'vote\' command.')
-                return
             if(user_vote is not 'yes' or user_vote is not 'yea' or user_vote is not 'nay' or user_vote is not 'no'):
                 await ctx.send('Error: \'vote\' must be yes or no.')
-                return
             self.session.votes += check_user_vote(user_vote)
             self.session.voted.append(ctx.author)
             if(check_voted()):
@@ -148,15 +168,14 @@ class PenCog(commands.Cog):
                     self.session.change_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                     #TODO: implement King
                     #TODO: implement doom counter
-                return
-        else:
-            pass #no vote in progress
 
     async def check_user_vote(self, user_vote):
         if(user_vote == 'yes' or user_vote == 'yea'):
             return Vote.YEA
-        else:
+        elif(user_vote == 'no' or user_vote == 'nay'):
             return Vote.NAY
+        else:
+            return None
 
     async def check_voted(self):
         self.session.voting.acquire()

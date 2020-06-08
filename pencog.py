@@ -88,7 +88,7 @@ class PenCog(commands.Cog):
 
 
     @commands.command(name='leave', help='Removes user from current game session')
-    async def unjoin(self, ctx):
+    async def leave(self, ctx):
         await ctx.send('\'leave\' command called')
         author = str(ctx.author)
         if self.session is not None:
@@ -112,50 +112,46 @@ class PenCog(commands.Cog):
 
     @commands.command(name='nominate', help='Nominates players towards current quest.')
     async def nominate(self, ctx, *args):
-        if(self.session is not None):
-            if(len(args) < 1):
+        if self.session is not None:
+            if str(ctx.author) != self.session.get_king():
+                await ctx.send('Error: Only the king can nominate playres.')
+            elif len(args) < 1 :
                 await ctx.send('Error: Need to nominate at least one player.')
-                return
-            if(len(args) > (self.session.current_quest - len(self.session.questers)) ):
+            elif len(args) > (self.session.current_quest - len(self.session.questers)):
                 await ctx.send('Error: attempting to add too many players to quest.')
-                return
-            for quester in args:
-                if(quester in self.session.questers):
-                    await ctx.send('Error: one of these players have already been added to the quest.')
-                    return
-                else:
-                    self.session.questers.append(quester)
+            else:
+                for quester in args:
+                    if(quester in self.session.questers):
+                        await ctx.send(f'Error: {quester} has already been added to the quest. Skipping.')
+                    else:
+                        self.session.questers.append(quester)
 
     @commands.command(name='startvote', help='Starts the voting for the current quest.')
     async def startvote(self, ctx):
-        if(self.session is not None):
-            if(len(self.session.questers) != self.session.current_quest):
+        if self.session is not None :
+            if len(self.session.questers) != self.session.current_quest :
                 await ctx.send('Error: Not enough players to start quest.')
-                return
             else:
                 self.session.change_state(GameState.TEAM_VOTE)
                 #move state to voting state
                 #game logic loop here
-                return
 
     @commands.command(name='vote', help='Records responses for the current vote')
     async def vote(self, ctx, *args):
         await ctx.send('\'vote\' command called')
-        if(self.session is not None and self.session.get_state == GameState.TEAM_VOTE):
-            if(args):
+        if self.session is not None and self.session.get_state == GameState.TEAM_VOTE:
+            if args:
                 user_vote = args[0].lower()
-            if(ctx.author in self.session.voted):
+            if ctx.author in self.session.voted:
                 await ctx.send('Error: you already voted!')
-                return
-            if(len(args) != 1):
+            elif len(args) != 1:
                 await ctx.send('Error: invalid number of arguments for \'vote\' command.')
-                return
-            if(user_vote is not 'yes' or user_vote is not 'yea' or user_vote is not 'nay' or user_vote is not 'no'):
+            elif user_vote is not 'yes' or user_vote is not 'yea' or user_vote is not 'nay' or user_vote is not 'no':
                 await ctx.send('Error: \'vote\' must be yes or no.')
-                return
-            self.session.votes += check_user_vote(user_vote)
-            self.session.voted.append(ctx.author)
-            if(check_voted()):
+            else:
+                self.session.votes += check_user_vote(user_vote)
+                self.session.voted.append(ctx.author)
+            if check_voted():
                 await ctx.send('Votes are done!')
                 # delete vote command message by user
                 if(vote_result):
@@ -164,7 +160,6 @@ class PenCog(commands.Cog):
                     self.session.change_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                     #TODO: implement King
                     #TODO: implement doom counter
-                return
         else:
             pass #no vote in progress
 
@@ -177,7 +172,7 @@ class PenCog(commands.Cog):
     async def check_voted(self):
         self.session.voting.acquire()
         try:
-            if(len(self.session.voted) == len(self.session.players)): #everyone voted
+            if len(self.session.voted) == len(self.session.players): #everyone voted
                 #Reset state back to original
                 self.session.voted = 0
                 result = True #votes are done

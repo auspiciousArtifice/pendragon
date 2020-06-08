@@ -93,6 +93,9 @@ class Session:
     def get_voted(self):
         return self.voted
 
+    def get_voter(self, player):
+        return self.get_voted().contains(player)
+
     def set_lady(self, player):
         self.lady = player
 

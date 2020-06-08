@@ -42,6 +42,9 @@ class Session:
     def get_turn(self):
         return self.turn % len(self.players)
 
+    def get_total_turns(self):
+        return self.turn
+
     def get_players(self):
         return self.players
 
@@ -126,7 +129,7 @@ class Session:
 
     def increment_turn(self):
         self.turn += 1
-        self.king = players[self.turn % len(self.players)]
+        self.king = players[self.get_turn()]
 
     def vote_result(self):
         result = (self.get_votes() > 0)

@@ -61,9 +61,9 @@ class Session:
         self.add_mordred = False
         self.add_oberon = False
         self.add_lancelot = False
-        self.settings = []
+        self.settings = [] # Settings will change based on # of players after game starts
         with open('settings.json') as json_file:
-            self.settings = json.load(json_file)['game_configs']
+            self.settings = json.load(json_file)['game_configs'] # Currently sets settings to all settings in settings.json
 
     def get_host(self):
         return self.host
@@ -315,7 +315,7 @@ class Session:
                 good_roles.append(Role.GOOD_GUY)
             for i in range(1, game_settings['EVIL']):
                 evil_roles.append(Role.EVIL_GUY)
-            #increments position every time a replacement happens
+            # Increments position in list every time a replacement happens (based on toggles)
             counter = 1
             if self.get_add_percival():
                 good_roles[counter] = Role.PERCIVAL
@@ -334,17 +334,18 @@ class Session:
                 counter += 1
             if self.get_add_lancelot():
                 evil_roles[counter] = Role.EVIL_LANCELOT
+            # Concatenates good roles with bad roles, then shuffles and assigns to players 
             roles = good_roles + evil_roles
             random.shuffle(roles)
-            for i in range(0,len(self.get_players())):
-                  player_name = self.get_players()[i][0]
+            for i in range(0,len(self.get_players())): 
+                  player_name = self.get_players()[i][0] # Will probably use set_roles function in the future, during some code cleanup
                   self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order
             self.set_king(players[0][0])
             self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
-            self.settings = game_settings #After number of players determined, sets settings to amount of players
+            self.settings = game_settings # After number of players determined, sets settings to amount of players
             return True
         else:
             return False

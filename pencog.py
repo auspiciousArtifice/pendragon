@@ -173,19 +173,24 @@ class PenCog(commands.Cog):
             if self.session.get_state() == GameState.NOMINATE:
                 if len(args) < 1 :
                     await ctx.send('Error: Need to nominate at least one player.')
+                    return
                 if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
                     await ctx.send('Error: attempting to add too many players to quest.')
-                for quester in args:
-                    self.session.nominating.acquire()
-                    print(quester) #DEBUG: remove later
-                    try:
-                        quester = commands.UserConverter.convert(ctx, str(quester)).display_name
-                        if self.session.add_quester(quester):
-                            await ctx.send(f'Added {quester} to quest.')
-                        else:
-                            await ctx.send(f'Error: could not add {quester} to quest.')
-                    finally:
-                        self.session.nominating.release()
+                    return
+                if ctx.author.display_name == self.session.get_king():
+                    for quester in args:
+                        self.session.nominating.acquire()
+                        print(quester) #DEBUG: remove later
+                        try:
+                            quester = commands.UserConverter.convert(ctx, str(quester)).display_name
+                            if self.session.add_quester(quester):
+                                await ctx.send(f'Added {quester} to quest.')
+                            else:
+                                await ctx.send(f'Error: could not add {quester} to quest.')
+                        finally:
+                            self.session.nominating.release()
+                else:
+                    await ctx.send('You are not the king! You cannot nominate.')
             else:
                 await ctx.send('We are currently not picking any players for the quest!')
         else:

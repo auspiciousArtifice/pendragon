@@ -127,6 +127,21 @@ class Session:
     def get_voter(self, player):
         return player in self.get_voted()
 
+    def get_add_percival(self):
+        return self.add_percival
+
+    def get_add_morgana(self):
+        return self.add_morgana
+
+    def get_add_mordred(self):
+        return self.add_mordred
+
+    def get_add_oberon(self):
+        return self.add_oberon
+
+    def get_add_lancelot(self):
+        return self.add_lancelot
+
     def set_lady(self, player):
         self.lady = int(player)
 
@@ -148,6 +163,21 @@ class Session:
 
     def set_state(self, new_state):
         self.state = new_state
+
+    def toggle_percival(self):
+        self.add_percival = not self.add_percival
+
+    def toggle_morgana(self):
+        self.add_morgana = not self.add_morgana
+
+    def toggle_mordred(self):
+        self.add_mordred = not self.add_mordred
+
+    def toggle_oberon(self):
+        self.add_oberon = not self.add_oberon
+
+    def toggle_lancelot(self):
+        self.add_lancelot = not self.add_lancelot
 
     def increment_quest_passed(self):
         self.quests_passed += 1
@@ -275,7 +305,8 @@ class Session:
             if not str(len(self.get_players())) in self.settings:
                 return False
             game_settings = self.settings[str(len(self.get_players()))]
-            if game_settings['EVIL']-1 < self.add_morgana + self.add_mordred + self.add_oberon + self.add_lancelot:
+            ttl_evil_replacement = self.get_add_morgana() + self.get_add_mordred() + self.get_add_oberon() + self.get_add_lancelot()
+            if game_settings['EVIL']-1 < ttl_evil_replacement:
                 return False
             # After game starts
             good_roles = [Role.MERLIN]
@@ -284,24 +315,24 @@ class Session:
                 good_roles.append(Role.GOOD_GUY)
             for i in range(1, game_settings['EVIL']):
                 evil_roles.append(Role.EVIL_GUY)
-            #increments position everytime a replacement happens
+            #increments position every time a replacement happens
             counter = 1
-            if self.add_percival:
+            if self.get_add_percival():
                 good_roles[counter] = Role.PERCIVAL
                 counter += 1
-            if self.add_lancelot:
+            if self.get_add_lancelot():
                 good_roles[counter] = Role.GOOD_LANCELOT
             counter = 1
-            if self.add_morgana:
+            if self.get_add_morgana():
                 evil_roles[counter] = Role.MORGANA
                 counter += 1
-            if self.add_mordred:
+            if self.get_add_mordred():
                 evil_roles[counter] = Role.MORDRED
                 counter += 1
-            if self.add_oberon:
+            if self.get_add_oberon():
                 evil_roles[counter] = Role.OBERON
                 counter += 1
-            if self.add_lancelot:
+            if self.get_add_lancelot():
                 evil_roles[counter] = Role.EVIL_LANCELOT
             roles = good_roles + evil_roles
             random.shuffle(roles)

@@ -85,6 +85,81 @@ class PenCog(commands.Cog):
         else:
             await ctx.send('No session to disband! Use the \'$gather\' command to create one.')
 
+    @commands.command(name='percival', help='Toggles whether Percival should be added or not. Off by default')
+    async def percival(self, ctx):
+        await ctx.send('\'percival\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_percival()
+                await ctx.send('Percival is now '+('removed','added')[self.session.get_add_percival()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Percival.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='morgana', help='Toggles whether Morgana should be added or not. Off by default')
+    async def morgana(self, ctx):
+        await ctx.send('\'morgana\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_morgana()
+                await ctx.send('Morgana is now '+('removed','added')[self.session.get_add_morgana()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Morgana.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='mordred', help='Toggles whether Mordred should be added or not. Off by default')
+    async def mordred(self, ctx):
+        await ctx.send('\'mordred\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_mordred()
+                await ctx.send('Mordred is now '+('removed','added')[self.session.get_add_mordred()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Mordred.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='oberon', help='Toggles whether Oberon should be added or not. Off by default')
+    async def oberon(self, ctx):
+        await ctx.send('\'oberon\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_oberon()
+                await ctx.send('Oberon is now '+('removed','added')[self.session.get_add_oberon()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Oberon.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='lancelot', help='Toggles whether Lancelots should be added or not. Off by default')
+    async def lancelot(self, ctx):
+        await ctx.send('\'lancelot\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_lancelot()
+                await ctx.send('Lancelots are now '+('removed','added')[self.session.get_add_lancelot()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Lancelots.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')

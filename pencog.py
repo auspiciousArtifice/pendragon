@@ -332,13 +332,11 @@ class PenCog(commands.Cog):
                         # delete vote command message by user
                         if(self.session.vote_result()):
                             await ctx.send('Vote passes. :)')
-                            self.session.set_state(GameState.QUESTING)
-                            self.session.set_doom_counter(0)
+                            self.questing(ctx)
                         else:
                             if(self.session.get_doom_counter() == 5):
                                 await ctx.send('Doom counter is 5, vote passes anyway.')
-                                self.session.set_state(GameState.QUESTING)
-                                self.session.set_doom_counter(0)
+                                self.questing(ctx)
                             else:
                                 await ctx.send('Vote fails. :(')
                                 self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
@@ -351,8 +349,51 @@ class PenCog(commands.Cog):
         else:
             pass #No game in progress, deliberate separation for no message
 
+    async def questing(self, ctx):
+        self.session.set_state(GameState.QUESTING)
+        quest = self.session.start_quest()
+        if(quest[0]):
+            await ctx.send('Quest passes. :)')
+            self.session.increment_quest_passed()
+            self.session.increment_current_quest()
+            self.session.set_doom_counter(0)
+
+        else:
+            await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
+            self.session.increment_quest_failed()
+            self.session.increment_current_quest()
+        #TODO: check game end here
+        #TODO: implement last stand
+        self.session.set_state(GameState.NOMINATE)
+
+    async def start_quest(self):
+        for quester in self.session.get_questers():
+            self.session.questing.acquire()
+            try:
+                self.quest_action(self, quester)
+            finally:
+                self.session.questing.release()
+        return (self.session.check_quest(), self.session.get_quest_result())
+
+    @bot.event
+    async def quest_action(self, ctx, quester):
+        user = commands.UserConverter.convert(ctx, str(quester))
+        channel = user.dm_channel
+        if(channel is None):
+            channel = user.create_dm()
+        await channel.send('Add that 👍 or 👎 reaction to this message.')
+
+        def check(reaction, user):
+            return user == channel.author and str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎'
+
+        try:
+            reaction, user = await ctx.wait_for('reaction_add', check=check)
+            if reaction == '👎':
+                self.session.set_quest_result(self.session.get_quest_result() - 1)
+            await channel.send('I\'ve recorded your response. 👍')
+
     @vote.error
-    async def debug_error(self, ctx, error):
+    async def vote_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):

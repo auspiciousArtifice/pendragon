@@ -1,7 +1,7 @@
 import random
+import json
 from enum import Enum
 from threading import Lock
-import random
 
 class GameState(Enum):
     CREATED = 0
@@ -56,6 +56,14 @@ class Session:
         self.voting = Lock()
         self.merlins_watch_list = []
         self.evil_watch_list = []
+        self.add_percival = False
+        self.add_morgana = False
+        self.add_mordred = False
+        self.add_oberon = False
+        self.add_lancelot = False
+        self.settings = []
+        with open('settings.json') as json_file:
+            self.settings = json.load(json_file)['game_configs']
 
     def get_host(self):
         return self.host
@@ -264,15 +272,48 @@ class Session:
 
     def start_game(self):
         if self.get_state() == GameState.CREATED:
+            if not str(len(self.get_players())) in self.settings:
+                return False
+            game_settings = self.settings[str(len(self.get_players()))]
+            if game_settings['EVIL']-1 < self.add_morgana + self.add_mordred + self.add_oberon + self.add_lancelot:
+                return False
             # After game starts
-            # for player_tuple in players
-            #     player_tuple[1] = select_random_role()
-            #     # select_random_role takes a role from the list then excludes it for later selections
+            good_roles = [Role.MERLIN]
+            evil_roles = [Role.ASSASSIN]
+            for i in range(1, game_settings['GOOD']):
+                good_roles.append(Role.GOOD_GUY)
+            for i in range(1, game_settings['EVIL']):
+                evil_roles.append(Role.EVIL_GUY)
+            #increments position everytime a replacement happens
+            counter = 1
+            if self.add_percival:
+                good_roles[counter] = Role.PERCIVAL
+                counter += 1
+            if self.add_lancelot:
+                good_roles[counter] = Role.GOOD_LANCELOT
+            counter = 1
+            if self.add_morgana:
+                evil_roles[counter] = Role.MORGANA
+                counter += 1
+            if self.add_mordred:
+                evil_roles[counter] = Role.MORDRED
+                counter += 1
+            if self.add_oberon:
+                evil_roles[counter] = Role.OBERON
+                counter += 1
+            if self.add_lancelot:
+                evil_roles[counter] = Role.EVIL_LANCELOT
+            roles = good_roles + evil_roles
+            random.shuffle(roles)
+            for i in range(0,len(self.get_players())):
+                  player_name = self.get_players()[i][0]
+                  self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order
             self.set_king(players[0][0])
             self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
+            self.settings = game_settings #After number of players determined, sets settings to amount of players
             return True
         else:
             return False

@@ -47,6 +47,9 @@ class PenCog(commands.Cog):
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
+            elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
+                for i in range(0, int(args[1])):
+                    self.session.add_player(f'{731+i}')
             else:
                 print('Error: Invalid argument.')
         else:

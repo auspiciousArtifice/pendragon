@@ -242,7 +242,10 @@ class Session:
             # for player_tuple in players
             #     player_tuple[1] = select_random_role()
             #     # select_random_role takes a role from the list then excludes it for later selections
-            # random.shuffle(players) # This is to determine turn order
+            players = self.get_players()
+            random.shuffle(players) # This is to determine turn order
+            self.set_king(players[0])
+            self.set_lady(players[len(players)-1])
             self.set_state(GameState.NOMINATE)
             return True
         else:

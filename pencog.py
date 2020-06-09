@@ -160,6 +160,30 @@ class PenCog(commands.Cog):
         else:
             await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
+    @commands.command(name='all_roles', help='Puts all roles into the game. Note: 1 villain role must be removed')
+    async def all_roles(self, ctx):
+        await ctx.send('\'all_roles\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                if not self.session.get_add_percival():
+                    self.session.toggle_percival()
+                if not self.session.get_add_morgana():
+                    self.session.toggle_morgana()
+                if not self.session.get_add_mordred():
+                    self.session.toggle_mordred()
+                if not self.session.get_add_oberon():
+                    self.session.toggle_oberon()
+                if not self.session.get_add_lancelot():
+                    self.session.toggle_lancelot()
+                await ctx.send('All roles are added. Please remove roles as there will be too many villains.')
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add all special roles.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
@@ -170,6 +194,29 @@ class PenCog(commands.Cog):
                 try:
                     if self.session.start_game():
                         await ctx.send(f'{host.name}\'s game has begun!')
+                        for player in self.session.get_players():
+                            player_role = self.session.get_role(player[0])
+                            if player_role == Role.MERLIN:
+                                m_list = []
+                                for p in self.session.get_players():
+                                    if self.session.get_role(p[0]).value < -1:
+                                        m_list.append(p[0])
+                                await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
+                            elif player_role.value < 0:
+                                e_list = []
+                                for p in self.session.get_players():
+                                    if self.session.get_role(p[0]).value < 0 and p != player:
+                                        e_list.append(p[0])
+                                await ctx.send(f'{player[0]}, here are the other villain(s): {e_list}')
+                            elif player_role == Role.PERCIVAL:
+                                p_list = []
+                                for p in self.session.get_players():
+                                    if abs(self.session.get_role(p[0]).value) == 2:
+                                        p_list.append(p[0])
+                                if len(p_list) == 1:
+                                    await ctx.send(f'{player[0]}, {p_list[0]} is Merlin')
+                                elif len(p_list) == 2:
+                                    await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
                     else:
                         await ctx.send('Game could not be started')
                 finally:

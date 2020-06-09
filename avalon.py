@@ -46,6 +46,7 @@ class Session:
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
+        self.double_fail = False
         self.questers_required = 0
         self.questers = []
         self.nominating = Lock()

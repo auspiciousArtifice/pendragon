@@ -46,7 +46,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'gather\' command called')
         await ctx.send(f'Now accepting players into {author}\'s game')
         self.session = Session(author)
-        session.add_player(author)
+        self.session.add_player(author)
 
     @commands.command(name='disband', help='Disbands current game session')
     async def disband(self, ctx):
@@ -66,14 +66,17 @@ class PenCog(commands.Cog):
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
         if self.session:
-            self.session.joining.acquire()
-            try:
-                if self.session.start_game():
-                    await ctx.send(f'{self.session.get_host()}\'s game has begun!')
-                else:
-                    await ctx.send('Game could not be started')
-            finally:
-                self.session.joining.release()
+            if(ctx.author.display_name == self.session.get_host()):
+                self.session.joining.acquire()
+                try:
+                    if self.session.start_game():
+                        await ctx.send(f'{self.session.get_host()}\'s game has begun!')
+                    else:
+                        await ctx.send('Game could not be started')
+                finally:
+                    self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t start the game.')
         else:
             await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
@@ -97,9 +100,8 @@ class PenCog(commands.Cog):
             await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
 
 
-    @commands.command(name='leave', help='Removes user from current game session')
+    @commands.command(name='leave', help='Removes self from current game session')
     async def unjoin(self, ctx):
-        #TODO: Mutex needed here for leaving.
         await ctx.send('\'leave\' command called')
         author = str(ctx.author.display_name)
         if self.session:
@@ -112,6 +114,29 @@ class PenCog(commands.Cog):
                         await ctx.send(f'{author} was successfully removed from {self.session.get_host()}\'s game.')
                     else:
                         await ctx.send(f'Can not leave {self.session.get_host()}\'s game.')
+                else:
+                    await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
+            finally:
+                self.session.joining.release()
+        else:
+            pass #No game in progress, deliberate separation for no message
+
+    @commands.command(name='kick', help='Removes user from current game session')
+    async def kick(self, ctx, *arg):
+        await ctx.send('\'leave\' command called')
+        author = str(ctx.author.display_name)
+        if self.session:
+            player = commands.UserConverter.convert(arg).display_name
+            self.session.joining.acquire()
+            try:
+                if author == self.session.get_host():
+                    if self.session.get_player(player):
+                        if self.session.remove_player(player):
+                            await ctx.send(f'{player} was successfully removed from {self.session.get_host()}\'s game.')
+                        else:
+                            await ctx.send(f'Can not kick {player} from {self.session.get_host()}\'s game.')
+                    else:
+                        await ctx.send(f'Could not find {player} in session.')
                 else:
                     await ctx.send(f'{author} is not in the game! Use the command $join to join the game.')
             finally:
@@ -174,14 +199,17 @@ class PenCog(commands.Cog):
     @commands.command(name='turn', help='Shows the current turn and turn order.')
     async def turn(self, ctx):
         if self.session:
-            current_turn = self.session.get_turn()
-            player_order = ''
-            for i in range(0, self.session.get_num_players()):
-                if i != current_turn:
-                    player_order += f'{self.session.get_players()[i][0]}\n'
-                else:
-                    player_order += f'{self.session.get_players()[i][0]} <- current turn\n'
-            await ctx.send(player_order)
+            if self.session.get_state() != GameState.CREATED:
+                current_turn = self.session.get_turn()
+                player_order = ''
+                for i in range(0, self.session.get_num_players()):
+                    if i != current_turn:
+                        player_order += f'{self.session.get_players()[i][0]}\n'
+                    else:
+                        player_order += f'{self.session.get_players()[i][0]} <- current turn\n'
+                await ctx.send(player_order)
+            else:
+                await ctx.send('Game hasn\'t started yet. No turn order yet.')
         else:
             pass #No game in progress, deliberate separation for no message
 

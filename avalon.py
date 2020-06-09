@@ -158,7 +158,6 @@ class Session:
         return result
 
     def add_player(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.CREATED:
             if self.get_player(player) is None:
                 player_tuple = (player, None)
@@ -169,7 +168,6 @@ class Session:
             return False
 
     def remove_player(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.CREATED:
             for i in range(0, len(self.get_players())):
                 if self.get_players()[i][0] == player:
@@ -180,7 +178,6 @@ class Session:
             return False
 
     def add_quester(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.NOMINATE:
             if self.get_player(player):
                 quester = player in self.get_questers()
@@ -194,7 +191,6 @@ class Session:
             return False
 
     def remove_quester(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.NOMINATE:
             for i in range(0, len(self.get_questers())):
                 if self.get_questers()[i] == player:
@@ -205,7 +201,6 @@ class Session:
             return False
 
     def add_voter(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.TEAM_VOTE:
             voted = player in self.get_voted()
             if not voted:
@@ -216,7 +211,6 @@ class Session:
             return False
 
     def remove_voter(self, player):
-        # TODO: use mutex here
         if self.get_state() == GameState.TEAM_VOTE:
             for i in range(0, len(self.get_voted())):
                 if self.get_voted()[i] == player:

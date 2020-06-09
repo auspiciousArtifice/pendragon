@@ -373,7 +373,7 @@ class PenCog(commands.Cog):
                 self.session.questing.release()
         return (self.session.check_quest(), self.session.get_quest_result())
 
-    @bot.event
+    @commands.Cog.listener()
     async def quest_action(self, ctx, quester):
         user = commands.UserConverter.convert(ctx, str(quester))
         channel = user.dm_channel

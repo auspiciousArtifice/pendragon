@@ -33,6 +33,9 @@ class PenCog(commands.Cog):
             elif args[0] == 'host':
                 await ctx.send(f'Current host is {self.session.get_host()}')
                 print(f'Current host is {self.session.get_host()}')
+            elif args[0] == 'king':
+                await ctx.send(f'Current king is {self.session.get_king()}')
+                print(f'Current host is {self.session.get_king()}')
             elif args[0] == 'set_questers_required':
                 self.session.set_questers_required(int(args[1]))
             elif args[0] == 'set_role':
@@ -171,26 +174,29 @@ class PenCog(commands.Cog):
     async def nominate(self, ctx, *args):
         if self.session:
             if self.session.get_state() == GameState.NOMINATE:
+                if ctx.author.display_name != self.session.get_king()[0]:
+                    await ctx.send('You are not the king! You cannot nominate.')
+                    return
                 if len(args) < 1 :
                     await ctx.send('Error: Need to nominate at least one player.')
                     return
                 if len(args) > (self.session.get_questers_required() - len(self.session.get_questers())):
                     await ctx.send('Error: attempting to add too many players to quest.')
                     return
-                if ctx.author.display_name == self.session.get_king():
+                else:
                     for quester in args:
                         self.session.nominating.acquire()
                         print(quester) #DEBUG: remove later
                         try:
-                            quester = commands.UserConverter.convert(ctx, str(quester)).display_name
+                            quester = await commands.UserConverter().convert(ctx, quester)
+                            print(quester)
+                            quester = quester.display_name
                             if self.session.add_quester(quester):
                                 await ctx.send(f'Added {quester} to quest.')
                             else:
                                 await ctx.send(f'Error: could not add {quester} to quest.')
                         finally:
                             self.session.nominating.release()
-                else:
-                    await ctx.send('You are not the king! You cannot nominate.')
             else:
                 await ctx.send('We are currently not picking any players for the quest!')
         else:
@@ -200,7 +206,7 @@ class PenCog(commands.Cog):
     async def startvote(self, ctx):
         if self.session:
             if self.session.get_state() == GameState.NOMINATE:
-                if self.session.get_king() == ctx.author.display_name:
+                if self.session.get_king()[0] == ctx.author.display_name:
                     if self.session.get_questers_required() == len(self.session.get_questers()):
                         self.session.set_state(GameState.TEAM_VOTE)
                         await ctx.send('Enough players have been nominated. Voting starts now.')

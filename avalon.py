@@ -95,7 +95,7 @@ class Session:
         return self.voted
 
     def get_voter(self, player):
-        return self.get_voted().contains(player)
+        return player in self.get_voted()
 
     def set_lady(self, player):
         self.lady = player
@@ -182,10 +182,13 @@ class Session:
     def add_quester(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.NOMINATE:
-            quester = self.get_questers().contains(player)
-            if not quester:
-                self.get_questers().append(player)
-                return True
+            if self.get_player(player):
+                quester = player in self.get_questers()
+                if not quester:
+                    self.get_questers().append(player)
+                    return True
+            else:
+                return False
             return False
         else:
             return False
@@ -204,7 +207,7 @@ class Session:
     def add_voter(self, player):
         # TODO: use mutex here
         if self.get_state() == GameState.TEAM_VOTE:
-            voted = self.get_voted().contains(player)
+            voted = player in self.get_voted()
             if not voted:
                 self.get_voted().append(player)
                 return True

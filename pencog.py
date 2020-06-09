@@ -42,7 +42,7 @@ class PenCog(commands.Cog):
     @commands.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
     async def gather(self, ctx):
         #TODO: Mutex needed here to bind to text channel
-        author = str(ctx.author)
+        author = str(ctx.author.display_name)
         await ctx.send('\'gather\' command called')
         await ctx.send(f'Now accepting players into {author}\'s game')
         self.session = Session(author)
@@ -50,7 +50,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='disband', help='Disbands current game session')
     async def disband(self, ctx):
-        author = str(ctx.author)
+        author = str(ctx.author.display_name)
         await ctx.send('\'disband\' command called')
         if self.session:
             if author == self.session.get_host():
@@ -61,7 +61,6 @@ class PenCog(commands.Cog):
                 await ctx.send(f'{author}, you have not yet created a game session. Please use the \'gather\' command to create one.')
         else:
             await ctx.send('No session to disband! Use the \'$gather\' command to create one.')
-
 
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
@@ -81,7 +80,7 @@ class PenCog(commands.Cog):
     @commands.command(name='join', help='Adds user to current game session')
     async def join(self, ctx):
         await ctx.send('\'join\' command called')
-        author = str(ctx.author)
+        author = str(ctx.author.display_name)
         if self.session:
             self.session.joining.acquire()
             try:
@@ -102,7 +101,7 @@ class PenCog(commands.Cog):
     async def unjoin(self, ctx):
         #TODO: Mutex needed here for leaving.
         await ctx.send('\'leave\' command called')
-        author = str(ctx.author)
+        author = str(ctx.author.display_name)
         if self.session:
             self.session.joining.acquire()
             try:
@@ -143,6 +142,7 @@ class PenCog(commands.Cog):
                 for quester in args:
                     self.session.nominating.acquire()
                     try:
+                        quester = commands.UserConverter.convert(quester).display_name
                         if self.session.add_quester(quester):
                             await ctx.send(f'Added {quester} to quest.')
                         else:
@@ -158,7 +158,7 @@ class PenCog(commands.Cog):
     async def startvote(self, ctx):
         if self.session:
             if self.session.get_state() == GameState.NOMINATE:
-                if self.session.get_king() == ctx.author:
+                if self.session.get_king() == ctx.author.display_name:
                     if self.session.get_questers_required() == len(self.session.get_questers()):
                         self.session.set_state(GameState.TEAM_VOTE)
                         await ctx.send('Enough players have been nominated. Voting starts now.')
@@ -193,7 +193,7 @@ class PenCog(commands.Cog):
             if len(args) != 1:
                     await ctx.send('Error: invalid number of arguments for \'lady\' command.')
             elif self.session.get_state() == GameState.NOMINATE:
-                if self.session.get_lady() == ctx.author:
+                if self.session.get_lady() == ctx.author.display_name:
                     role = self.session.get_player(args[0])[1]
                     if role:
                         lady_message = f'{args[0]} is '
@@ -214,7 +214,7 @@ class PenCog(commands.Cog):
             if self.session.get_state() == GameState.TEAM_VOTE:
                 if arg:
                     user_vote = arg.lower()
-                if self.session.get_voter(ctx.author):
+                if self.session.get_voter(ctx.author.display_name):
                     await ctx.send('Error: you already voted!')
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
@@ -223,7 +223,7 @@ class PenCog(commands.Cog):
                 self.session.voting.acquire()
                 try:
                     self.session.votes += user_vote
-                    self.session.get_voted().append(ctx.author)
+                    self.session.get_voted().append(ctx.author.display_name)
                     if self.session.check_voted():
                         await ctx.send('Votes are done!')
                         # delete vote command message by user

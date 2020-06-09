@@ -357,6 +357,5 @@ class PenCog(commands.Cog):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):
             print('Error: vote command received too many arguments.') #needs only 1 argument
-        #TODO: uncomment below.
-        # else:
-        #     print(error)
+        else:
+            print(error)

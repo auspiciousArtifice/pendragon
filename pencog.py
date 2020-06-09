@@ -15,18 +15,29 @@ class PenCog(commands.Cog):
         await ctx.send('Here is a link to the rules: https://tinyurl.com/ycf4jttk')
 
     @commands.command(name='debug')
-    async def debug(self, ctx, arg):
+    async def debug(self, ctx, *args):
         await ctx.send('\'debug\' command called')
         #await ctx.send(self.session)
         #print(self.session)
-        print(arg)
+        print(args)
         if self.session:
-            if arg == 'gamestate':
+            if args[0] == 'gamestate':
                 await ctx.send(f'Current GameState is {self.session.get_state().name}')
                 print(f'Current GameState is {self.session.get_state().name}')
-            elif arg == 'players':
+            elif args[0] == 'players':
                 await ctx.send(f'Current players are {self.session.get_players()}')
                 print(f'Current players are {self.session.get_players()}')
+            elif args[0] == 'nominated':
+                await ctx.send(f'Current questers nominated are {self.session.get_questers()}')
+                print(f'Current questers nominated are {self.session.get_questers()}')
+            elif args[0] == 'host':
+                await ctx.send(f'Current host is {self.session.get_host()}')
+                print(f'Current host is {self.session.get_host()}')
+            elif args[0] == 'set_questers_required':
+                self.session.set_questers_required(int(args[1]))
+            elif args[0] == 'set_role':
+                #self.session.set_questers_required(Roles[args[1]])
+                pass
             else:
                 print('Error: Invalid argument.')
         else:
@@ -126,7 +137,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'leave\' command called')
         author = str(ctx.author.display_name)
         if self.session:
-            player = commands.UserConverter.convert(arg).display_name
+            player = commands.UserConverter.convert(ctx, arg).display_name
             self.session.joining.acquire()
             try:
                 if author == self.session.get_host():
@@ -166,8 +177,9 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: attempting to add too many players to quest.')
                 for quester in args:
                     self.session.nominating.acquire()
+                    print(quester) #DEBUG: remove later
                     try:
-                        quester = commands.UserConverter.convert(quester).display_name
+                        quester = commands.UserConverter.convert(ctx, str(quester)).display_name
                         if self.session.add_quester(quester):
                             await ctx.send(f'Added {quester} to quest.')
                         else:

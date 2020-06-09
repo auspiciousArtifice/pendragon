@@ -80,7 +80,7 @@ class Session:
         return self.current_quest
     
     def get_questers_required(self):
-        return self.get_questers_required
+        return self.questers_required
     
     def get_questers(self):
         return self.questers

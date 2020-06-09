@@ -323,13 +323,15 @@ class PenCog(commands.Cog):
                     return
                 self.session.voting.acquire()
                 try:
+                    print(user_vote.value)
+                    print(self.session.get_votes() + user_vote.value)
                     self.session.set_votes(self.session.get_votes() + user_vote.value)
                     self.session.get_voted().append(ctx.author.id)
                     if self.session.check_voted():
                         await ctx.send('Votes are done!')
                         # delete vote command message by user
                         if(self.session.vote_result()):
-                            await ctx.send('Vote passes.')
+                            await ctx.send('Vote passes. :)')
                             self.session.set_state(GameState.QUESTING)
                             self.session.set_doom_counter(0)
                         else:
@@ -338,10 +340,10 @@ class PenCog(commands.Cog):
                                 self.session.set_state(GameState.QUESTING)
                                 self.session.set_doom_counter(0)
                             else:
-                                await ctx.send('Vote fails.')
+                                await ctx.send('Vote fails. :(')
                                 self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
-                                self.session.increment_turn()
                                 self.session.increment_doom_counter()
+                        self.session.increment_turn()
                 finally:
                     self.session.voting.release()
             else:
@@ -355,5 +357,6 @@ class PenCog(commands.Cog):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):
             print('Error: vote command received too many arguments.') #needs only 1 argument
+        #TODO: uncomment below.
         # else:
         #     print(error)

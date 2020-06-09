@@ -138,10 +138,10 @@ class Session:
         self.king = players[self.get_turn()]
         self.clear_voted()
         self.clear_questers()
+        self.set_votes(0)
 
     def vote_result(self):
         result = (self.get_votes() > 0)
-        self.set_votes(0)
         return result
 
     def check_user_vote(self, user_vote):
@@ -154,8 +154,6 @@ class Session:
 
     def check_voted(self):
         if(len(self.get_voted()) == len(self.get_players())): #everyone voted
-            #Reset state back to original
-            self.set_votes(0)
             result = True #votes are done
         else:
             result = False #votes are still being taken

@@ -16,7 +16,7 @@ class Vote(Enum):
 
 class Session:
     def __init__(self, host):
-        self.host = host
+        self.host = int(host)
         self.players = []
         self.joining = Lock()
 
@@ -52,10 +52,12 @@ class Session:
     def get_num_players(self):
         return len(self.players)
 
-    def get_player(self, name):
-        for i in range(0, len(self.players)):
-            if self.players[i][0] == name:
-                return self.players[i]
+    def get_player(self, id):
+        for i in range(0, len(self.get_players())):
+            player_id = int(self.get_players()[i][0])
+            id = int(id)
+            if player_id == id:
+                return self.get_players()[i]
         return None
 
     def get_role(self, player):
@@ -98,10 +100,10 @@ class Session:
         return player in self.get_voted()
 
     def set_lady(self, player):
-        self.lady = player
+        self.lady = int(player)
 
     def set_king(self, player):
-        self.king = player
+        self.king = int(player)
 
     def set_votes(self, votes):
         self.votes = votes
@@ -134,6 +136,8 @@ class Session:
     def increment_turn(self):
         self.turn += 1
         self.king = players[self.get_turn()]
+        self.clear_voted()
+        self.clear_questers()
 
     def vote_result(self):
         result = (self.get_votes() > 0)
@@ -160,6 +164,7 @@ class Session:
     def add_player(self, player):
         if self.get_state() == GameState.CREATED:
             if self.get_player(player) is None:
+                player = int(player)
                 player_tuple = (player, None)
                 self.get_players().append(player_tuple)
                 return True
@@ -170,8 +175,8 @@ class Session:
     def remove_player(self, player):
         if self.get_state() == GameState.CREATED:
             for i in range(0, len(self.get_players())):
-                if self.get_players()[i][0] == player:
-                    del self.get_players()[i]
+                if int(self.get_players()[i][0]) == int(player):
+                    del self.players[i]
                     return True
             return False
         else:
@@ -179,10 +184,10 @@ class Session:
 
     def add_quester(self, player):
         if self.get_state() == GameState.NOMINATE:
-            if self.get_player(player):
-                quester = player in self.get_questers()
+            if self.get_player(int(player)):
+                quester = int(player) in self.get_questers()
                 if not quester:
-                    self.get_questers().append(player)
+                    self.get_questers().append(int(player))
                     return True
             else:
                 return False
@@ -193,8 +198,8 @@ class Session:
     def remove_quester(self, player):
         if self.get_state() == GameState.NOMINATE:
             for i in range(0, len(self.get_questers())):
-                if self.get_questers()[i] == player:
-                    del self.get_questers()[i]
+                if self.get_questers()[i] == int(player):
+                    del self.questers[i]
                     return True
             return False
         else:
@@ -202,9 +207,9 @@ class Session:
 
     def add_voter(self, player):
         if self.get_state() == GameState.TEAM_VOTE:
-            voted = player in self.get_voted()
+            voted = int(player) in self.get_voted()
             if not voted:
-                self.get_voted().append(player)
+                self.get_voted().append(int(player))
                 return True
             return False
         else:
@@ -214,15 +219,21 @@ class Session:
         if self.get_state() == GameState.TEAM_VOTE:
             for i in range(0, len(self.get_voted())):
                 if self.get_voted()[i] == player:
-                    del self.get_voted()[i]
+                    del self.voted[i]
                     return True
             return False
         else:
             return False
 
+    def clear_voted(self):
+        self.voted = []
+
+    def clear_questers(self):
+        self.questers = []
+
     def use_lady(self, player):
         if self.get_state() == GameState.NOMINATE:
-            return self.get_player(player)[1]
+            return self.get_player(int(player))[1]
 
     def start_quest(self):
         pass #TODO: check if doom_counter == 5
@@ -241,8 +252,8 @@ class Session:
             #     # select_random_role takes a role from the list then excludes it for later selections
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order
-            self.set_king(players[0])
-            self.set_lady(players[len(players)-1])
+            self.set_king(players[0][0])
+            self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
             return True
         else:

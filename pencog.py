@@ -355,15 +355,13 @@ class PenCog(commands.Cog):
         if(quest[0]):
             await ctx.send('Quest passes. :)')
             self.session.increment_quest_passed()
-            self.session.increment_current_quest()
-            self.session.set_doom_counter(0)
-
         else:
             await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
             self.session.increment_quest_failed()
-            self.session.increment_current_quest()
         #TODO: check game end here
         #TODO: implement last stand
+        self.session.increment_current_quest()
+        self.session.set_doom_counter(0)
         self.session.set_state(GameState.NOMINATE)
 
     async def start_quest(self):
@@ -390,6 +388,7 @@ class PenCog(commands.Cog):
             reaction, user = await ctx.wait_for('reaction_add', check=check)
             if reaction == '👎':
                 self.session.set_quest_result(self.session.get_quest_result() - 1)
+                #delete DM message with their reaction
             await channel.send('I\'ve recorded your response. 👍')
 
     @vote.error

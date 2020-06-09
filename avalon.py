@@ -16,16 +16,21 @@ class Vote(Enum):
     YEA = 1
 
 class Role(Enum):
-    GOOD_GUY = 0
-    EVIL_GUY = 11
+    GOOD_GUY = 1
+    EVIL_GUY = -5
     MERLIN = 2
-    ASSASSIN = 13
-    PERCIVAL = 4
-    MORGANA = 15
-    MORDRED = 16
-    OBERON = 7
-    GOOD_LANCELOT = 8
-    EVIL_LANCELOT = 19
+    ASSASSIN = -3
+    PERCIVAL = 3
+    MORGANA = -2
+    MORDRED = -1
+    OBERON = 0
+    GOOD_LANCELOT = 4
+    EVIL_LANCELOT = -4
+
+    # if player_role.value < -1 #Merlin
+    # if player_role.value < 0 #Evil, except Oberon
+    # if player_role.value > 0 #Good, unused
+    # if abs(player_role.value) == 2 #Percival
 
 class Session:
     def __init__(self, host):

@@ -28,6 +28,7 @@ class Role(Enum):
     GOOD_LANCELOT = 4
     EVIL_LANCELOT = -4
 
+    # Simplified conditions for role checks
     # if player_role.value < -1 #Merlin
     # if player_role.value < 0 #Evil, except Oberon
     # if player_role.value > 0 #Good, unused

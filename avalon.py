@@ -67,7 +67,7 @@ class Session:
         return self.host
 
     def get_turn(self):
-        return self.turn % len(self.players)
+        return self.turn % len(self.get_players())
 
     def get_total_turns(self):
         return self.turn
@@ -173,7 +173,7 @@ class Session:
 
     def increment_turn(self):
         self.turn += 1
-        self.king = players[self.get_turn()]
+        self.king = self.get_players()[self.get_turn()][0]
         self.clear_voted()
         self.clear_questers()
         self.set_votes(0)

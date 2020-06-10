@@ -195,14 +195,14 @@ class PenCog(commands.Cog):
                     if self.session.start_game():
                         await ctx.send(f'{host.name}\'s game has begun!')
                         for player in self.session.get_players():
-                            player_role = self.session.get_role(player[0])
+                            player_role = player[1] # gets role
                             if player_role == Role.MERLIN:
                                 m_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < -1:
                                         m_list.append(p[0])
                                 await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
-                            elif player_role.value < 0:
+                            elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < 0 and p != player:

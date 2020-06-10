@@ -312,11 +312,15 @@ class PenCog(commands.Cog):
         if len(arg) > 1:
             await ctx.send('Error: too many arguments for vote command.')
         if self.session:
+            if not self.session.get_player(ctx.author.id):
+                await ctx.send('Error: you are not in this game!')
+                return
             if self.session.get_state() == GameState.TEAM_VOTE:
                 if arg[0]:
                     user_vote = arg[0].lower()
                 if self.session.get_voter(ctx.author.id):
                     await ctx.send('Error: you already voted!')
+                    return
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
                     await ctx.send('Error: invalid vote string.')

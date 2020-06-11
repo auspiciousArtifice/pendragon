@@ -53,6 +53,9 @@ class PenCog(commands.Cog):
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
+            elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
+                for i in range(0, int(args[1])):
+                    self.session.add_player(f'{731+i}')
             else:
                 print('Error: Invalid argument.')
         else:
@@ -88,6 +91,105 @@ class PenCog(commands.Cog):
         else:
             await ctx.send('No session to disband! Use the \'$gather\' command to create one.')
 
+    @commands.command(name='percival', help='Toggles whether Percival should be added or not. Off by default')
+    async def percival(self, ctx):
+        await ctx.send('\'percival\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_percival()
+                await ctx.send('Percival is now '+('removed','added')[self.session.get_add_percival()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Percival.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='morgana', help='Toggles whether Morgana should be added or not. Off by default')
+    async def morgana(self, ctx):
+        await ctx.send('\'morgana\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_morgana()
+                await ctx.send('Morgana is now '+('removed','added')[self.session.get_add_morgana()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Morgana.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='mordred', help='Toggles whether Mordred should be added or not. Off by default')
+    async def mordred(self, ctx):
+        await ctx.send('\'mordred\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_mordred()
+                await ctx.send('Mordred is now '+('removed','added')[self.session.get_add_mordred()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Mordred.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='oberon', help='Toggles whether Oberon should be added or not. Off by default')
+    async def oberon(self, ctx):
+        await ctx.send('\'oberon\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_oberon()
+                await ctx.send('Oberon is now '+('removed','added')[self.session.get_add_oberon()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Oberon.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='lancelot', help='Toggles whether Lancelots should be added or not. Off by default')
+    async def lancelot(self, ctx):
+        await ctx.send('\'lancelot\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                self.session.toggle_lancelot()
+                await ctx.send('Lancelots are now '+('removed','added')[self.session.get_add_lancelot()])
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add/remove Lancelots.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
+    @commands.command(name='all_roles', help='Puts all roles into the game. Note: 1 villain role must be removed')
+    async def all_roles(self, ctx):
+        await ctx.send('\'all_roles\' called')
+        if self.session:
+            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            if(ctx.author.id == self.session.get_host()):
+                self.session.joining.acquire()
+                if not self.session.get_add_percival():
+                    self.session.toggle_percival()
+                if not self.session.get_add_morgana():
+                    self.session.toggle_morgana()
+                if not self.session.get_add_mordred():
+                    self.session.toggle_mordred()
+                if not self.session.get_add_oberon():
+                    self.session.toggle_oberon()
+                if not self.session.get_add_lancelot():
+                    self.session.toggle_lancelot()
+                await ctx.send('All roles are added. Please remove roles as there will be too many villains.')
+                self.session.joining.release()
+            else:
+                await ctx.send('You are not the host! You can\'t add all special roles.')
+        else:
+            await ctx.send('Session hasn\'t been created yet! Use the \'$gather\' command to create one.')
+
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
@@ -99,6 +201,29 @@ class PenCog(commands.Cog):
                     if self.session.start_game():
                         await ctx.send(f'{host.name}\'s game has begun!')
                         await self.turn(ctx)
+                        for player in self.session.get_players():
+                            player_role = player[1] # gets role
+                            if player_role == Role.MERLIN:
+                                m_list = []
+                                for p in self.session.get_players():
+                                    if self.session.get_role(p[0]).value < -1:
+                                        m_list.append(p[0])
+                                await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
+                            elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
+                                e_list = []
+                                for p in self.session.get_players():
+                                    if self.session.get_role(p[0]).value < 0 and p != player:
+                                        e_list.append(p[0])
+                                await ctx.send(f'{player[0]}, here are the other villain(s): {e_list}')
+                            elif player_role == Role.PERCIVAL:
+                                p_list = []
+                                for p in self.session.get_players():
+                                    if abs(self.session.get_role(p[0]).value) == 2:
+                                        p_list.append(p[0])
+                                if len(p_list) == 1:
+                                    await ctx.send(f'{player[0]}, {p_list[0]} is Merlin')
+                                elif len(p_list) == 2:
+                                    await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
                     else:
                         await ctx.send('Game could not be started')
                 finally:
@@ -319,12 +444,16 @@ class PenCog(commands.Cog):
         if len(arg) > 1:
             await ctx.send('Error: too many arguments for vote command.')
         if self.session:
+            if not self.session.get_player(ctx.author.id):
+                await ctx.send('Error: you are not in this game!')
+                return
             if self.session.get_state() == GameState.TEAM_VOTE:
                 if arg[0]:
                     user_vote = arg[0].lower()
                 if self.session.get_voter(ctx.author.id):
                     await ctx.send('Error: you already voted!')
-                #TODO: check if vote command was called by a current player
+                    #TODO: check if vote command was called by a current player
+                    return
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
                     await ctx.send('Error: invalid vote string.')
@@ -407,3 +536,4 @@ class PenCog(commands.Cog):
         #TODO: uncomment below.
         # else:
         #     print(error)
+

@@ -2,13 +2,13 @@ from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
 
 class PenCog(commands.Cog):
-    def __init__(self, pen):
-        self.pen = pen
+    def __init__(self, bot):
+        self.bot = bot
         self.session = None
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f'We have logged in as {self.pen.user.name}')
+        print(f'We have logged in as {self.bot.user.name}')
 
     @commands.command(name='rules', help='Displays the rules of the game')
     async def rules(self, ctx):
@@ -44,6 +44,12 @@ class PenCog(commands.Cog):
             elif args[0] == 'votes':
                 await ctx.send(f'Current vote total is {self.session.get_votes()}')
                 print(f'Current vote count is {self.session.get_votes()}')
+            elif args[0] == 'quest':
+                await ctx.send(f'Current quest result is {self.session.get_quest_result()}')
+                print(f'Current quest result is {self.session.get_quest_result()}')
+            elif args[0] == 'turn':
+                await ctx.send(f'Current turn is {self.session.get_turn()}')
+                print(f'Current turn is {self.session.get_turn()}')
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
@@ -194,6 +200,7 @@ class PenCog(commands.Cog):
                 try:
                     if self.session.start_game():
                         await ctx.send(f'{host.name}\'s game has begun!')
+                        await self.turn(ctx)
                         for player in self.session.get_players():
                             player_role = player[1] # gets role
                             if player_role == Role.MERLIN:
@@ -445,6 +452,7 @@ class PenCog(commands.Cog):
                     user_vote = arg[0].lower()
                 if self.session.get_voter(ctx.author.id):
                     await ctx.send('Error: you already voted!')
+                    #TODO: check if vote command was called by a current player
                     return
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
@@ -452,39 +460,80 @@ class PenCog(commands.Cog):
                     return
                 self.session.voting.acquire()
                 try:
-                    print(user_vote.value)
-                    print(self.session.get_votes() + user_vote.value)
                     self.session.set_votes(self.session.get_votes() + user_vote.value)
                     self.session.get_voted().append(ctx.author.id)
                     if self.session.check_voted():
                         await ctx.send('Votes are done!')
-                        # delete vote command message by user
                         if(self.session.vote_result()):
                             await ctx.send('Vote passes. :)')
-                            self.session.set_state(GameState.QUESTING)
-                            self.session.set_doom_counter(0)
+                            await self.questing(ctx)
                         else:
                             if(self.session.get_doom_counter() == 5):
                                 await ctx.send('Doom counter is 5, vote passes anyway.')
-                                self.session.set_state(GameState.QUESTING)
-                                self.session.set_doom_counter(0)
+                                await self.questing(ctx)
                             else:
                                 await ctx.send('Vote fails. :(')
-                                self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                                 self.session.increment_doom_counter()
+                                self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                         self.session.increment_turn()
+                        await self.turn(ctx)
                 finally:
                     self.session.voting.release()
             else:
-                ctx.send('No voting in progress.')
+                await ctx.send('No voting in progress.')
         else:
             pass #No game in progress, deliberate separation for no message
 
+    async def questing(self, ctx):
+        self.session.set_state(GameState.QUESTING)
+        quest = await self.start_quest(ctx)
+        if(quest[0]):
+            await ctx.send('Quest passes. :)')
+            self.session.increment_quest_passed()
+        else:
+            await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
+            self.session.increment_quest_failed()
+        #TODO: check game end here
+        #TODO: implement last stand
+        self.session.increment_current_quest()
+        self.session.set_doom_counter(0)
+        self.session.set_state(GameState.NOMINATE)
+
+    async def start_quest(self, ctx):
+        for quester in self.session.get_questers():
+            self.session.questing.acquire()
+            try:
+                await self.quest_action(ctx, quester)
+            finally:
+                self.session.questing.release()
+        quest_tuple = (self.session.check_quest(), self.session.get_quest_result())
+        return quest_tuple
+
+    @commands.Cog.listener()
+    async def quest_action(self, ctx, quester):
+
+        member = ctx.guild.get_member(quester)        
+        await member.send('Add that 👍 or 👎 reaction to this message.')
+
+        def check(reaction, user):
+            return user == member and str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎'
+
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', check=check)
+            if reaction.emoji == '👎':
+                self.session.set_quest_result(self.session.get_quest_result() - 1)
+                #TODO: delete DM message with their reaction
+            await member.send('I\'ve recorded your response. 👍')
+        except Exception as e:
+            print(e)
+
     @vote.error
-    async def debug_error(self, ctx, error):
+    async def vote_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):
             print('Error: vote command received too many arguments.') #needs only 1 argument
-        else:
-            print(error)
+        #TODO: uncomment below.
+        # else:
+        #     print(error)
+

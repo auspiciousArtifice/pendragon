@@ -2,6 +2,8 @@ import random
 import json
 from enum import Enum
 from threading import Lock
+from discord.ext import commands
+
 
 class GameState(Enum):
     CREATED = 0
@@ -27,6 +29,7 @@ class Role(Enum):
     GOOD_LANCELOT = 4
     EVIL_LANCELOT = -4
 
+    # Simplified conditions for role checks
     # if player_role.value < -1 #Merlin
     # if player_role.value < 0 #Evil, except Oberon
     # if player_role.value > 0 #Good, unused
@@ -46,6 +49,10 @@ class Session:
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
+        self.double_fail = False
+        self.quest_result = 0
+        self.questing = Lock()
+
         self.questers_required = 0
         self.questers = []
         self.nominating = Lock()
@@ -69,10 +76,13 @@ class Session:
         return self.host
 
     def get_turn(self):
-        return self.turn % len(self.players)
+        return self.turn % len(self.get_players())
 
     def get_total_turns(self):
         return self.turn
+
+    def get_double_fail(self):
+        return self.double_fail
 
     def get_players(self):
         return self.players
@@ -102,6 +112,9 @@ class Session:
 
     def get_quests_passed(self):
         return self.quests_passed
+
+    def get_quest_result(self):
+        return self.quest_result
 
     def get_quests_failed(self):
         return self.quests_failed
@@ -151,6 +164,9 @@ class Session:
     def set_votes(self, votes):
         self.votes = votes
 
+    def set_double_fail(self, fail):
+        self.double_fail = fail
+
     def set_doom_counter(self, number):
         self.doom_counter = number
 
@@ -163,6 +179,9 @@ class Session:
 
     def set_state(self, new_state):
         self.state = new_state
+    
+    def set_quest_result(self, number):
+        self.quest_result = number
 
     def toggle_percival(self):
         self.add_percival = not self.add_percival
@@ -193,7 +212,7 @@ class Session:
 
     def increment_turn(self):
         self.turn += 1
-        self.king = players[self.get_turn()]
+        self.king = self.get_players()[self.get_turn()][0]
         self.clear_voted()
         self.clear_questers()
         self.set_votes(0)
@@ -291,14 +310,18 @@ class Session:
         if self.get_state() == GameState.NOMINATE:
             return self.get_player(int(player))[1]
 
-    def start_quest(self):
-        pass #TODO: check if doom_counter == 5
-
-    def quest_action(self):
-        pass #TODO: pass or fail quest.
-
     def check_quest(self):
-        pass #TODO: calculate quest outcome
+        result = self.get_quest_result()
+        if self.get_double_fail():
+            if result <= -2:
+                return False #quest fails
+            else:
+                return True #quest passes
+        else:
+            if result <= -1:
+                return False
+            else:
+                return True
 
     def start_game(self):
         if self.get_state() == GameState.CREATED:

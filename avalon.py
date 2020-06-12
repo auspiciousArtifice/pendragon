@@ -254,6 +254,12 @@ class Session:
         else:
             return False
 
+    def add_dummy(self, dummy):
+        dummy = int(dummy)
+        if self.get_state() == GameState.CREATED:
+            player_tuple = (dummy, None)
+            self.get_players().append(player_tuple)
+
     def remove_player(self, player):
         if self.get_state() == GameState.CREATED:
             for i in range(0, len(self.get_players())):
@@ -386,7 +392,7 @@ class Session:
         swap = lancelot_swaps.pop()
         if not swap: # Swap is false
             return False
-        for i in range(0, len(self.get_players()):
+        for i in range(0, len(self.get_players())):
             if self.get_players[i][1] == Role.GOOD_LANCELOT:
                 self.get_players[i] = (self.get_players[i][0], Role.EVIL_LANCELOT)
             elif self.get_players[i][1] == Role.EVIL_LANCELOT:

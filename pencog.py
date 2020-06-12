@@ -55,7 +55,7 @@ class PenCog(commands.Cog):
                 pass
             elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
                 for i in range(0, int(args[1])):
-                    self.session.add_player(int(ctx.author.id))
+                    self.session.add_dummy(ctx.author.id)
             else:
                 print('Error: Invalid argument.')
         else:
@@ -203,27 +203,33 @@ class PenCog(commands.Cog):
                         await self.turn(ctx)
                         for player in self.session.get_players():
                             player_role = player[1] # gets role
+                            role_name = player_role.name.lower().capitalize().replace('_',' ')
+                            member = ctx.guild.get_member(player[0])
+                            await member.send(f'Your role for this game is: {player_role.name}.')
                             if player_role == Role.MERLIN:
                                 m_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < -1:
-                                        m_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        m_list.append(p_user.name)
+                                await member.send(f'Here are the list of evil player(s) you can see: {m_list}')
                             elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < 0 and p != player:
-                                        e_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the other villain(s): {e_list}')
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        e_list.append(p_user.name)
+                                await member.send(f'Here are the other villain(s): {e_list}')
                             elif player_role == Role.PERCIVAL:
                                 p_list = []
                                 for p in self.session.get_players():
                                     if abs(self.session.get_role(p[0]).value) == 2:
-                                        p_list.append(p[0])
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_list.append(p_user.name)
                                 if len(p_list) == 1:
-                                    await ctx.send(f'{player[0]}, {p_list[0]} is Merlin')
+                                    await member.send(f'{p_list[0]} is Merlin')
                                 elif len(p_list) == 2:
-                                    await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
+                                    await member.send(f'One of these 2 is Merlin: {p_list}')
                     else:
                         await ctx.send('Game could not be started')
                 finally:

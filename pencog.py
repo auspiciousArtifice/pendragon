@@ -55,7 +55,7 @@ class PenCog(commands.Cog):
                 pass
             elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
                 for i in range(0, int(args[1])):
-                    self.session.add_player(f'{731+i}')
+                    self.session.add_player(int(ctx.author.id))
             else:
                 print('Error: Invalid argument.')
         else:
@@ -496,6 +496,10 @@ class PenCog(commands.Cog):
         #TODO: check game end here
         #TODO: implement last stand
         self.session.increment_current_quest()
+        if self.session.get_current_quest() >= 3 and self.session.get_add_lancelot():
+            swap_happened = self.session.lancelot_swap()
+            if swap_happened:
+                await ctx.send('Attention: Lancelots have been swapped!')
         self.session.set_doom_counter(0)
         self.session.set_state(GameState.NOMINATE)
 

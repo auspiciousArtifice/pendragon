@@ -213,6 +213,7 @@ class Session:
 
     def increment_current_quest(self):
         self.current_quest += 1
+        self.set_questers_required(self.settings[f'Q{self.current_quest+1}'])
 
     def increment_doom_counter(self):
         self.doom_counter += 1
@@ -259,6 +260,8 @@ class Session:
         if self.get_state() == GameState.CREATED:
             player_tuple = (dummy, None)
             self.get_players().append(player_tuple)
+        else:
+            print('Game state is not \'Created\'')
 
     def remove_player(self, player):
         if self.get_state() == GameState.CREATED:
@@ -280,6 +283,13 @@ class Session:
             else:
                 return False
             return False
+        else:
+            return False
+
+    def dummy_questers(self):
+        if self.get_state() == GameState.NOMINATE:
+            while len(self.questers) < self.questers_required:
+                self.get_questers().append(self.get_players()[-1][0])
         else:
             return False
 
@@ -384,6 +394,7 @@ class Session:
             self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
             self.settings = game_settings # After number of players determined, sets settings to amount of players
+            self.set_questers_required(game_settings['Q1'])
             return True
         else:
             return False

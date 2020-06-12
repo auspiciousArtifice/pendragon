@@ -53,9 +53,30 @@ class PenCog(commands.Cog):
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
-            elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
+            elif args[0] == 'dummies':
                 for i in range(0, int(args[1])):
                     self.session.add_dummy(ctx.author.id)
+            elif args[0] == 'dummy_questers':
+                if self.session.get_state() == GameState.NOMINATE:
+                    self.session.dummy_questers()
+                    await ctx.send('Nominated dummy quester(s)')
+            elif args[0] == 'all_yea':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    await ctx.send('Vote passes. :)')
+                    await self.questing(ctx)
+                    self.session.increment_turn()
+                    await self.turn(ctx)
+            elif args[0] == 'all_nay':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    if(self.session.get_doom_counter() == 5):
+                        await ctx.send('Doom counter is 5, vote passes anyway.')
+                        await self.questing(ctx)
+                    else:
+                        await ctx.send('Vote fails. :(')
+                        self.session.increment_doom_counter()
+                        self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                    self.session.increment_turn()
+                    await self.turn(ctx)
             else:
                 print('Error: Invalid argument.')
         else:
@@ -502,10 +523,12 @@ class PenCog(commands.Cog):
         #TODO: check game end here
         #TODO: implement last stand
         self.session.increment_current_quest()
-        if self.session.get_current_quest() >= 3 and self.session.get_add_lancelot():
+        if self.session.get_current_quest()+1 >= 3 and self.session.get_add_lancelot():
             swap_happened = self.session.lancelot_swap()
             if swap_happened:
                 await ctx.send('Attention: Lancelots have been swapped!')
+        if self.session.get_current_quest() == 3: #4th quest
+            self.session.set_double_fail(self.session.get_settings()['DF'])
         self.session.set_doom_counter(0)
         self.session.set_state(GameState.NOMINATE)
 

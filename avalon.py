@@ -369,7 +369,7 @@ class Session:
             if self.get_add_lancelot():
                 good_roles[counter] = Role.GOOD_LANCELOT
                 self.lancelot_swaps = [True, True, False, False, False]
-                random.shuffle(lancelot_swaps)
+                random.shuffle(self.lancelot_swaps)
             counter = 1
             if self.get_add_morgana():
                 evil_roles[counter] = Role.MORGANA

@@ -63,6 +63,7 @@ class Session:
         self.voting = Lock()
         self.merlins_watch_list = []
         self.evil_watch_list = []
+        # TODO: rename config variables
         self.add_percival = False
         self.add_morgana = False
         self.add_mordred = False
@@ -96,6 +97,13 @@ class Session:
             id = int(id)
             if player_id == id:
                 return self.get_players()[i]
+        return None
+
+    def get_merlin(self):
+        for i in range(0, len(self.get_players())):
+            role = self.get_players()[i][1]
+            if role == Role.MERLIN:
+                return self.get_players[i]
         return None
 
     def get_role(self, player):

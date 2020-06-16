@@ -368,7 +368,7 @@ class Session:
                 counter += 1
             if self.get_add_lancelot():
                 good_roles[counter] = Role.GOOD_LANCELOT
-                lancelot_swaps = [True, True, False, False, False]
+                self.lancelot_swaps = [True, True, False, False, False]
                 random.shuffle(lancelot_swaps)
             counter = 1
             if self.get_add_morgana():
@@ -400,7 +400,7 @@ class Session:
             return False
 
     def lancelot_swap(self):
-        swap = lancelot_swaps.pop()
+        swap = self.lancelot_swaps.pop()
         if not swap: # Swap is false
             return False
         for i in range(0, len(self.get_players())):

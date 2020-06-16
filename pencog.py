@@ -1,6 +1,8 @@
 from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
 
+# TODO: change await commands.UserConverter().convert(ctx, user_id) to ctx.guild.get_member(user_id)
+# TODO: change all current_quests+1 to instead initialize with current_quest = 1
 class PenCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

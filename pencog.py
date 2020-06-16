@@ -493,11 +493,14 @@ class PenCog(commands.Cog):
         else:
             await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
             self.session.increment_quest_failed()
-        #TODO: check game end here
-        #TODO: implement last stand
-        self.session.increment_current_quest()
-        self.session.set_doom_counter(0)
-        self.session.set_state(GameState.NOMINATE)
+        if self.session.get_quests_passed() >= 3:
+            self.last_stand(ctx)
+        elif self.session.get_quests_failed() >= 3:
+            self.game_over(ctx, False) # Bad guys win
+        else:
+            self.session.increment_current_quest()
+            self.session.set_doom_counter(0)
+            self.session.set_state(GameState.NOMINATE)
 
     async def start_quest(self, ctx):
         for quester in self.session.get_questers():
@@ -533,7 +536,46 @@ class PenCog(commands.Cog):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):
             print('Error: vote command received too many arguments.') #needs only 1 argument
-        #TODO: uncomment below.
-        # else:
-        #     print(error)
+        else:
+            print(error)
 
+    async def last_stand(self, ctx):
+        self.session.set_state(GameState.LAST_STAND)
+        await ctx.send('One last chance for the bad guys to win. Assassinate Merlin!')
+
+    # TODO: error checking for assassinate command
+    @commands.command(name='assassinate', help='Assassinates a player. Intended for Merlin.')
+    async def assassinate(self, ctx, *args):
+        if self.session:
+            if self.session.get_state() == GameState.LAST_STAND:
+                role = self.session.get_role(ctx.author.id) 
+                if role == Role.ASSASSIN:
+                    target = await commands.UserConverter().convert(ctx, str(args[0]))
+                    target_role = self.session.get_role(target)
+                    if target_role == Role.MERLIN:
+                        await ctx.send(f'The assassination attempt succeeded!')
+                        await self.game_over(ctx, False)
+                    else:
+                        merlin = self.session.get_merlin()
+                        merlin_player = ctx.guild.get_member(merlin[0])
+                        await ctx.send(f'The assassination attempt failed! {merlin_player} is Merlin!')
+                        await self.game_over(ctx, True)
+                else:
+                    await ctx.send(f'You are not the assassin!')
+            else:
+                await ctx.send(f'We are not on the last stand!')
+        else:
+            pass #No game in progress, deliberate separation for no message
+    
+
+
+    async def game_over(self, ctx, allegiance):
+        self.session.set_state(GameState.GAME_OVER)
+        # Good guys win
+        if allegiance:
+            await ctx.send('Good guys win!')
+        # Bad guys win
+        else:
+            await ctx.send('Bad guys win!')
+        await ctx.send('Game over!')
+        #TODO: dispose session properly

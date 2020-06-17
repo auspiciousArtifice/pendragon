@@ -380,3 +380,7 @@ class Session:
             return True
         else:
             return False
+
+    def assassinate(self, target):
+        target_role = self.get_role(target)
+        return target_role == self.get_merlin()[1]

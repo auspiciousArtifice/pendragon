@@ -452,7 +452,6 @@ class PenCog(commands.Cog):
                     user_vote = arg[0].lower()
                 if self.session.get_voter(ctx.author.id):
                     await ctx.send('Error: you already voted!')
-                    #TODO: check if vote command was called by a current player
                     return
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
@@ -543,16 +542,16 @@ class PenCog(commands.Cog):
         self.session.set_state(GameState.LAST_STAND)
         await ctx.send('One last chance for the bad guys to win. Assassinate Merlin!')
 
-    # TODO: error checking for assassinate command
     @commands.command(name='assassinate', help='Assassinates a player. Intended for Merlin.')
     async def assassinate(self, ctx, *args):
         if self.session:
-            if self.session.get_state() == GameState.LAST_STAND:
+            if len(args) != 1:
+                await ctx.send('Insufficient number of arguments. Please target 1 player.')
+            elif self.session.get_state() == GameState.LAST_STAND:
                 role = self.session.get_role(ctx.author.id) 
                 if role == Role.ASSASSIN:
                     target = await commands.UserConverter().convert(ctx, str(args[0]))
-                    target_role = self.session.get_role(target)
-                    if target_role == Role.MERLIN:
+                    if assassinate(target):
                         await ctx.send(f'The assassination attempt succeeded!')
                         await self.game_over(ctx, False)
                     else:
@@ -567,7 +566,14 @@ class PenCog(commands.Cog):
         else:
             pass #No game in progress, deliberate separation for no message
     
-
+    @assassinate.error
+    async def assassinate_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            print('Error: vote command received no arguments.') #needs only 1 argument
+        if isinstance(error, commands.TooManyArguments):
+            print('Error: vote command received too many arguments.') #needs only 1 argument
+        else:
+            print(error)
 
     async def game_over(self, ctx, allegiance):
         self.session.set_state(GameState.GAME_OVER)

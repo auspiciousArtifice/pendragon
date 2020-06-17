@@ -188,12 +188,11 @@ class PenCog(commands.Cog):
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
         if self.session:
-            host = ctx.guild.get_member(self.session.get_host())
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 try:
                     if self.session.start_game():
-                        await ctx.send(f'{host.name}\'s game has begun!')
+                        await ctx.send(f'{ctx.author.name}\'s game has begun!')
                         await self.turn(ctx)
                         for player in self.session.get_players():
                             player_role = player[1] # gets role

@@ -69,6 +69,7 @@ class Session:
         self.add_mordred = False
         self.add_oberon = False
         self.add_lancelot = False
+        self.lancelot_swaps = []
         self.settings = [] # Settings will change based on # of players after game starts
         with open('settings.json') as json_file:
             self.settings = json.load(json_file)['game_configs'] # Currently sets settings to all settings in settings.json
@@ -92,9 +93,9 @@ class Session:
         return len(self.players)
 
     def get_player(self, id):
+        id = int(id)
         for i in range(0, len(self.get_players())):
             player_id = int(self.get_players()[i][0])
-            id = int(id)
             if player_id == id:
                 return self.get_players()[i]
         return None
@@ -163,6 +164,9 @@ class Session:
     def get_add_lancelot(self):
         return self.add_lancelot
 
+    def get_settings(self):
+        return self.settings
+
     def set_lady(self, player):
         self.lady = int(player)
 
@@ -181,9 +185,12 @@ class Session:
     def set_questers_required(self, number):
         self.questers_required = number
 
-    def set_role(self, player, role):
-        player_obj = self.get_player(player)
-        player_obj[1] = role
+    def set_role(self, id, role):
+        id = int(id)
+        for i in range(0, len(self.get_players())):
+            player_id = int(self.get_players()[i][0])
+            if player_id == id:
+                self.get_players()[i] = (id, role)
 
     def set_state(self, new_state):
         self.state = new_state
@@ -214,6 +221,7 @@ class Session:
 
     def increment_current_quest(self):
         self.current_quest += 1
+        self.set_questers_required(self.settings[f'Q{self.current_quest+1}'])
 
     def increment_doom_counter(self):
         self.doom_counter += 1
@@ -255,6 +263,14 @@ class Session:
         else:
             return False
 
+    def add_dummy(self, dummy):
+        dummy = int(dummy)
+        if self.get_state() == GameState.CREATED:
+            player_tuple = (dummy, None)
+            self.get_players().append(player_tuple)
+        else:
+            print('Game state is not \'Created\'')
+
     def remove_player(self, player):
         if self.get_state() == GameState.CREATED:
             for i in range(0, len(self.get_players())):
@@ -275,6 +291,13 @@ class Session:
             else:
                 return False
             return False
+        else:
+            return False
+
+    def dummy_questers(self):
+        if self.get_state() == GameState.NOMINATE:
+            while len(self.questers) < self.questers_required:
+                self.get_questers().append(self.get_players()[-1][0])
         else:
             return False
 
@@ -353,6 +376,8 @@ class Session:
                 counter += 1
             if self.get_add_lancelot():
                 good_roles[counter] = Role.GOOD_LANCELOT
+                self.lancelot_swaps = [True, True, False, False, False]
+                random.shuffle(self.lancelot_swaps)
             counter = 1
             if self.get_add_morgana():
                 evil_roles[counter] = Role.MORGANA
@@ -369,7 +394,7 @@ class Session:
             roles = good_roles + evil_roles
             random.shuffle(roles)
             for i in range(0,len(self.get_players())): 
-                  player_name = self.get_players()[i][0] # Will probably use set_roles function in the future, during some code cleanup
+                  player_name = self.get_players()[i][0]
                   self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order
@@ -377,9 +402,21 @@ class Session:
             self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
             self.settings = game_settings # After number of players determined, sets settings to amount of players
+            self.set_questers_required(game_settings['Q1'])
             return True
         else:
             return False
+
+    def lancelot_swap(self):
+        swap = self.lancelot_swaps.pop()
+        if not swap: # Swap is false
+            return False
+        for i in range(0, len(self.get_players())):
+            if self.get_players[i][1] == Role.GOOD_LANCELOT:
+                self.get_players[i] = (self.get_players[i][0], Role.EVIL_LANCELOT)
+            elif self.get_players[i][1] == Role.EVIL_LANCELOT:
+                self.get_players[i] = (self.get_players[i][0], Role.GOOD_LANCELOT)
+        return True
 
     def assassinate(self, target):
         target_role = self.get_role(target)

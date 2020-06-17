@@ -1,6 +1,8 @@
 from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
 
+# TODO: change await commands.UserConverter().convert(ctx, user_id) to ctx.guild.get_member(user_id)
+# TODO: change all current_quests+1 to instead initialize with current_quest = 1
 class PenCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -53,9 +55,30 @@ class PenCog(commands.Cog):
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
-            elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
+            elif args[0] == 'dummies':
                 for i in range(0, int(args[1])):
-                    self.session.add_player(f'{731+i}')
+                    self.session.add_dummy(ctx.author.id)
+            elif args[0] == 'dummy_questers':
+                if self.session.get_state() == GameState.NOMINATE:
+                    self.session.dummy_questers()
+                    await ctx.send('Nominated dummy quester(s)')
+            elif args[0] == 'all_yea':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    await ctx.send('Vote passes. :)')
+                    await self.questing(ctx)
+                    self.session.increment_turn()
+                    await self.turn(ctx)
+            elif args[0] == 'all_nay':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    if(self.session.get_doom_counter() == 5):
+                        await ctx.send('Doom counter is 5, vote passes anyway.')
+                        await self.questing(ctx)
+                    else:
+                        await ctx.send('Vote fails. :(')
+                        self.session.increment_doom_counter()
+                        self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                    self.session.increment_turn()
+                    await self.turn(ctx)
             else:
                 print('Error: Invalid argument.')
         else:
@@ -196,27 +219,33 @@ class PenCog(commands.Cog):
                         await self.turn(ctx)
                         for player in self.session.get_players():
                             player_role = player[1] # gets role
+                            role_name = player_role.name.lower().capitalize().replace('_',' ')
+                            member = ctx.guild.get_member(player[0])
+                            await member.send(f'Your role for this game is: {player_role.name}.')
                             if player_role == Role.MERLIN:
                                 m_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < -1:
-                                        m_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        m_list.append(p_user.name)
+                                await member.send(f'Here are the list of evil player(s) you can see: {m_list}')
                             elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < 0 and p != player:
-                                        e_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the other villain(s): {e_list}')
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        e_list.append(p_user.name)
+                                await member.send(f'Here are the other villain(s): {e_list}')
                             elif player_role == Role.PERCIVAL:
                                 p_list = []
                                 for p in self.session.get_players():
                                     if abs(self.session.get_role(p[0]).value) == 2:
-                                        p_list.append(p[0])
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_list.append(p_user.name)
                                 if len(p_list) == 1:
-                                    await ctx.send(f'{player[0]}, {p_list[0]} is Merlin')
+                                    await member.send(f'{p_list[0]} is Merlin')
                                 elif len(p_list) == 2:
-                                    await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
+                                    await member.send(f'One of these 2 is Merlin: {p_list}')
                     else:
                         await ctx.send('Game could not be started...')
                 finally:
@@ -485,6 +514,13 @@ class PenCog(commands.Cog):
         else:
             await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
             self.session.increment_quest_failed()
+
+        if self.session.get_current_quest()+1 >= 3 and self.session.get_add_lancelot():
+            swap_happened = self.session.lancelot_swap()
+            if swap_happened:
+                await ctx.send('Attention: Lancelots have been swapped!')
+        if self.session.get_current_quest() == 3: #4th quest
+            self.session.set_double_fail(self.session.get_settings()['DF'])    
         if self.session.get_quests_passed() >= 3:
             self.last_stand(ctx)
         elif self.session.get_quests_failed() >= 3:

@@ -219,7 +219,7 @@ class PenCog(commands.Cog):
                                 elif len(p_list) == 2:
                                     await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
                     else:
-                        await ctx.send('Game could not be started')
+                        await ctx.send('Game could not be started...')
                 finally:
                     self.session.joining.release()
             else:

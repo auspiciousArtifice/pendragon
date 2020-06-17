@@ -63,6 +63,7 @@ class Session:
         self.voting = Lock()
         self.merlins_watch_list = []
         self.evil_watch_list = []
+        # TODO: rename config variables
         self.add_percival = False
         self.add_morgana = False
         self.add_mordred = False
@@ -97,6 +98,13 @@ class Session:
             player_id = int(self.get_players()[i][0])
             if player_id == id:
                 return self.get_players()[i]
+        return None
+
+    def get_merlin(self):
+        for i in range(0, len(self.get_players())):
+            role = self.get_players()[i][1]
+            if role == Role.MERLIN:
+                return self.get_players[i]
         return None
 
     def get_role(self, player):
@@ -409,3 +417,7 @@ class Session:
             elif self.get_players[i][1] == Role.EVIL_LANCELOT:
                 self.get_players[i] = (self.get_players[i][0], Role.GOOD_LANCELOT)
         return True
+
+    def assassinate(self, target):
+        target_role = self.get_role(target)
+        return target_role == self.get_merlin()[1]

@@ -42,7 +42,7 @@ class Session:
         self.lady = None
         self.turn = 0
         self.state = GameState.CREATED
-        
+
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
@@ -50,7 +50,7 @@ class Session:
         self.questers = []
         self.nominating = Lock()
         self.doom_counter = 0
-        
+
         self.votes = 0
         self.voted = []
         self.voting = Lock()
@@ -108,19 +108,19 @@ class Session:
 
     def get_current_quest(self):
         return self.current_quest
-    
+
     def get_questers_required(self):
         return self.questers_required
-    
+
     def get_questers(self):
         return self.questers
-    
+
     def get_doom_counter(self):
         return self.doom_counter
 
     def get_votes(self):
         return self.votes
-    
+
     def get_voted(self):
         return self.voted
 
@@ -199,8 +199,7 @@ class Session:
         self.set_votes(0)
 
     def vote_result(self):
-        result = (self.get_votes() > 0)
-        return result
+        return self.get_votes() > 0
 
     def check_user_vote(self, user_vote):
         if(user_vote == 'yes' or user_vote == 'yea'):
@@ -211,11 +210,7 @@ class Session:
             return None
 
     def check_voted(self):
-        if(len(self.get_voted()) == len(self.get_players())): #everyone voted
-            result = True #votes are done
-        else:
-            result = False #votes are still being taken
-        return result
+        return len(self.get_voted()) == len(self.get_players()) # True == Everyone Voted
 
     def add_player(self, player):
         if self.get_state() == GameState.CREATED:
@@ -334,10 +329,10 @@ class Session:
                 counter += 1
             if self.get_add_lancelot():
                 evil_roles[counter] = Role.EVIL_LANCELOT
-            # Concatenates good roles with bad roles, then shuffles and assigns to players 
+            # Concatenates good roles with bad roles, then shuffles and assigns to players
             roles = good_roles + evil_roles
             random.shuffle(roles)
-            for i in range(0,len(self.get_players())): 
+            for i in range(0,len(self.get_players())):
                   player_name = self.get_players()[i][0] # Will probably use set_roles function in the future, during some code cleanup
                   self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()

@@ -2,6 +2,8 @@ import random
 import json
 from enum import Enum
 from threading import Lock
+from discord.ext import commands
+
 
 class GameState(Enum):
     CREATED = 0
@@ -27,6 +29,7 @@ class Role(Enum):
     GOOD_LANCELOT = 4
     EVIL_LANCELOT = -4
 
+    # Simplified conditions for role checks
     # if player_role.value < -1 #Merlin
     # if player_role.value < 0 #Evil, except Oberon
     # if player_role.value > 0 #Good, unused
@@ -46,6 +49,10 @@ class Session:
         self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
+        self.double_fail = False
+        self.quest_result = 0
+        self.questing = Lock()
+
         self.questers_required = 0
         self.questers = []
         self.nominating = Lock()
@@ -56,11 +63,13 @@ class Session:
         self.voting = Lock()
         self.merlins_watch_list = []
         self.evil_watch_list = []
+        # TODO: rename config variables
         self.add_percival = False
         self.add_morgana = False
         self.add_mordred = False
         self.add_oberon = False
         self.add_lancelot = False
+        self.lancelot_swaps = []
         self.settings = [] # Settings will change based on # of players after game starts
         with open('settings.json') as json_file:
             self.settings = json.load(json_file)['game_configs'] # Currently sets settings to all settings in settings.json
@@ -69,10 +78,13 @@ class Session:
         return self.host
 
     def get_turn(self):
-        return self.turn % len(self.players)
+        return self.turn % len(self.get_players())
 
     def get_total_turns(self):
         return self.turn
+
+    def get_double_fail(self):
+        return self.double_fail
 
     def get_players(self):
         return self.players
@@ -81,11 +93,18 @@ class Session:
         return len(self.players)
 
     def get_player(self, id):
+        id = int(id)
         for i in range(0, len(self.get_players())):
             player_id = int(self.get_players()[i][0])
-            id = int(id)
             if player_id == id:
                 return self.get_players()[i]
+        return None
+
+    def get_merlin(self):
+        for i in range(0, len(self.get_players())):
+            role = self.get_players()[i][1]
+            if role == Role.MERLIN:
+                return self.get_players[i]
         return None
 
     def get_role(self, player):
@@ -102,6 +121,9 @@ class Session:
 
     def get_quests_passed(self):
         return self.quests_passed
+
+    def get_quest_result(self):
+        return self.quest_result
 
     def get_quests_failed(self):
         return self.quests_failed
@@ -142,6 +164,9 @@ class Session:
     def get_add_lancelot(self):
         return self.add_lancelot
 
+    def get_settings(self):
+        return self.settings
+
     def set_lady(self, player):
         self.lady = int(player)
 
@@ -151,18 +176,27 @@ class Session:
     def set_votes(self, votes):
         self.votes = votes
 
+    def set_double_fail(self, fail):
+        self.double_fail = fail
+
     def set_doom_counter(self, number):
         self.doom_counter = number
 
     def set_questers_required(self, number):
         self.questers_required = number
 
-    def set_role(self, player, role):
-        player_obj = self.get_player(player)
-        player_obj[1] = role
+    def set_role(self, id, role):
+        id = int(id)
+        for i in range(0, len(self.get_players())):
+            player_id = int(self.get_players()[i][0])
+            if player_id == id:
+                self.get_players()[i] = (id, role)
 
     def set_state(self, new_state):
         self.state = new_state
+    
+    def set_quest_result(self, number):
+        self.quest_result = number
 
     def toggle_percival(self):
         self.add_percival = not self.add_percival
@@ -187,13 +221,14 @@ class Session:
 
     def increment_current_quest(self):
         self.current_quest += 1
+        self.set_questers_required(self.settings[f'Q{self.current_quest+1}'])
 
     def increment_doom_counter(self):
         self.doom_counter += 1
 
     def increment_turn(self):
         self.turn += 1
-        self.king = players[self.get_turn()]
+        self.king = self.get_players()[self.get_turn()][0]
         self.clear_voted()
         self.clear_questers()
         self.set_votes(0)
@@ -223,6 +258,14 @@ class Session:
         else:
             return False
 
+    def add_dummy(self, dummy):
+        dummy = int(dummy)
+        if self.get_state() == GameState.CREATED:
+            player_tuple = (dummy, None)
+            self.get_players().append(player_tuple)
+        else:
+            print('Game state is not \'Created\'')
+
     def remove_player(self, player):
         if self.get_state() == GameState.CREATED:
             for i in range(0, len(self.get_players())):
@@ -243,6 +286,13 @@ class Session:
             else:
                 return False
             return False
+        else:
+            return False
+
+    def dummy_questers(self):
+        if self.get_state() == GameState.NOMINATE:
+            while len(self.questers) < self.questers_required:
+                self.get_questers().append(self.get_players()[-1][0])
         else:
             return False
 
@@ -286,14 +336,18 @@ class Session:
         if self.get_state() == GameState.NOMINATE:
             return self.get_player(int(player))[1]
 
-    def start_quest(self):
-        pass #TODO: check if doom_counter == 5
-
-    def quest_action(self):
-        pass #TODO: pass or fail quest.
-
     def check_quest(self):
-        pass #TODO: calculate quest outcome
+        result = self.get_quest_result()
+        if self.get_double_fail():
+            if result <= -2:
+                return False #quest fails
+            else:
+                return True #quest passes
+        else:
+            if result <= -1:
+                return False
+            else:
+                return True
 
     def start_game(self):
         if self.get_state() == GameState.CREATED:
@@ -317,6 +371,8 @@ class Session:
                 counter += 1
             if self.get_add_lancelot():
                 good_roles[counter] = Role.GOOD_LANCELOT
+                self.lancelot_swaps = [True, True, False, False, False]
+                random.shuffle(self.lancelot_swaps)
             counter = 1
             if self.get_add_morgana():
                 evil_roles[counter] = Role.MORGANA
@@ -332,8 +388,13 @@ class Session:
             # Concatenates good roles with bad roles, then shuffles and assigns to players
             roles = good_roles + evil_roles
             random.shuffle(roles)
+<<<<<<< HEAD
             for i in range(0,len(self.get_players())):
                   player_name = self.get_players()[i][0] # Will probably use set_roles function in the future, during some code cleanup
+=======
+            for i in range(0,len(self.get_players())): 
+                  player_name = self.get_players()[i][0]
+>>>>>>> b5ad41c86ffc1f2f87f5bc1e3c27a9f521bab1ca
                   self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order
@@ -341,6 +402,22 @@ class Session:
             self.set_lady(players[len(players)-1][0])
             self.set_state(GameState.NOMINATE)
             self.settings = game_settings # After number of players determined, sets settings to amount of players
+            self.set_questers_required(game_settings['Q1'])
             return True
         else:
             return False
+
+    def lancelot_swap(self):
+        swap = self.lancelot_swaps.pop()
+        if not swap: # Swap is false
+            return False
+        for i in range(0, len(self.get_players())):
+            if self.get_players[i][1] == Role.GOOD_LANCELOT:
+                self.get_players[i] = (self.get_players[i][0], Role.EVIL_LANCELOT)
+            elif self.get_players[i][1] == Role.EVIL_LANCELOT:
+                self.get_players[i] = (self.get_players[i][0], Role.GOOD_LANCELOT)
+        return True
+
+    def assassinate(self, target):
+        target_role = self.get_role(target)
+        return target_role == self.get_merlin()[1]

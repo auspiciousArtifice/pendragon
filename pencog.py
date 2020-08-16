@@ -1,14 +1,16 @@
 from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
 
+# TODO: change await commands.UserConverter().convert(ctx, user_id) to ctx.guild.get_member(user_id)
+# TODO: change all current_quests+1 to instead initialize with current_quest = 1
 class PenCog(commands.Cog):
-    def __init__(self, pen):
-        self.pen = pen
+    def __init__(self, bot):
+        self.bot = bot
         self.session = None
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f'We have logged in as {self.pen.user.name}')
+        print(f'We have logged in as {self.bot.user.name}')
 
     @commands.command(name='rules', help='Displays the rules of the game')
     async def rules(self, ctx):
@@ -44,12 +46,39 @@ class PenCog(commands.Cog):
             elif args[0] == 'votes':
                 await ctx.send(f'Current vote total is {self.session.get_votes()}')
                 print(f'Current vote count is {self.session.get_votes()}')
+            elif args[0] == 'quest':
+                await ctx.send(f'Current quest result is {self.session.get_quest_result()}')
+                print(f'Current quest result is {self.session.get_quest_result()}')
+            elif args[0] == 'turn':
+                await ctx.send(f'Current turn is {self.session.get_turn()}')
+                print(f'Current turn is {self.session.get_turn()}')
             elif args[0] == 'set_role':
                 #self.session.set_questers_required(Roles[args[1]])
                 pass
-            elif args[0] == 'dummies' and self.session.get_state() == GameState.CREATED:
+            elif args[0] == 'dummies':
                 for i in range(0, int(args[1])):
-                    self.session.add_player(f'{731+i}')
+                    self.session.add_dummy(ctx.author.id)
+            elif args[0] == 'dummy_questers':
+                if self.session.get_state() == GameState.NOMINATE:
+                    self.session.dummy_questers()
+                    await ctx.send('Nominated dummy quester(s)')
+            elif args[0] == 'all_yea':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    await ctx.send('Vote passes. :)')
+                    await self.questing(ctx)
+                    self.session.increment_turn()
+                    await self.turn(ctx)
+            elif args[0] == 'all_nay':
+                if self.session.get_state() == GameState.TEAM_VOTE:
+                    if(self.session.get_doom_counter() == 5):
+                        await ctx.send('Doom counter is 5, vote passes anyway.')
+                        await self.questing(ctx)
+                    else:
+                        await ctx.send('Vote fails. :(')
+                        self.session.increment_doom_counter()
+                        self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
+                    self.session.increment_turn()
+                    await self.turn(ctx)
             else:
                 print('Error: Invalid argument.')
         else:
@@ -89,7 +118,6 @@ class PenCog(commands.Cog):
     async def percival(self, ctx):
         await ctx.send('\'percival\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 self.session.toggle_percival()
@@ -104,7 +132,6 @@ class PenCog(commands.Cog):
     async def morgana(self, ctx):
         await ctx.send('\'morgana\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 self.session.toggle_morgana()
@@ -119,7 +146,6 @@ class PenCog(commands.Cog):
     async def mordred(self, ctx):
         await ctx.send('\'mordred\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 self.session.toggle_mordred()
@@ -134,7 +160,6 @@ class PenCog(commands.Cog):
     async def oberon(self, ctx):
         await ctx.send('\'oberon\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 self.session.toggle_oberon()
@@ -149,7 +174,6 @@ class PenCog(commands.Cog):
     async def lancelot(self, ctx):
         await ctx.send('\'lancelot\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 self.session.toggle_lancelot()
@@ -164,7 +188,6 @@ class PenCog(commands.Cog):
     async def all_roles(self, ctx):
         await ctx.send('\'all_roles\' called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 if not self.session.get_add_percival():
@@ -188,37 +211,43 @@ class PenCog(commands.Cog):
     async def begin(self, ctx):
         await ctx.send('\'begin\' command called')
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
             if(ctx.author.id == self.session.get_host()):
                 self.session.joining.acquire()
                 try:
                     if self.session.start_game():
-                        await ctx.send(f'{host.name}\'s game has begun!')
+                        await ctx.send(f'{ctx.author.name}\'s game has begun!')
+                        await self.turn(ctx)
                         for player in self.session.get_players():
-                            player_role = self.session.get_role(player[0])
+                            player_role = player[1] # gets role
+                            role_name = player_role.name.lower().capitalize().replace('_',' ')
+                            member = ctx.guild.get_member(player[0])
+                            await member.send(f'Your role for this game is: {player_role.name}.')
                             if player_role == Role.MERLIN:
                                 m_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < -1:
-                                        m_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the list of evil player(s) you can see: {m_list}')
-                            elif player_role.value < 0:
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        m_list.append(p_user.name)
+                                await member.send(f'Here are the list of evil player(s) you can see: {m_list}')
+                            elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.get_players():
                                     if self.session.get_role(p[0]).value < 0 and p != player:
-                                        e_list.append(p[0])
-                                await ctx.send(f'{player[0]}, here are the other villain(s): {e_list}')
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        e_list.append(p_user.name)
+                                await member.send(f'Here are the other villain(s): {e_list}')
                             elif player_role == Role.PERCIVAL:
                                 p_list = []
                                 for p in self.session.get_players():
                                     if abs(self.session.get_role(p[0]).value) == 2:
-                                        p_list.append(p[0])
+                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_list.append(p_user.name)
                                 if len(p_list) == 1:
-                                    await ctx.send(f'{player[0]}, {p_list[0]} is Merlin')
+                                    await member.send(f'{p_list[0]} is Merlin')
                                 elif len(p_list) == 2:
-                                    await ctx.send(f'{player[0]}, one of these 2 is Merlin: {p_list}')
+                                    await member.send(f'One of these 2 is Merlin: {p_list}')
                     else:
-                        await ctx.send('Game could not be started')
+                        await ctx.send('Game could not be started...')
                 finally:
                     self.session.joining.release()
             else:
@@ -231,7 +260,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'join\' command called')
         author = int(ctx.author.id)
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            host = ctx.guild.get_member(self.session.get_host())
             self.session.joining.acquire()
             try:
                 if self.session.get_player(author) is None:
@@ -252,7 +281,7 @@ class PenCog(commands.Cog):
         await ctx.send('\'leave\' command called')
         author = int(ctx.author.id)
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            host = ctx.guild.get_member(self.session.get_host())
             self.session.joining.acquire()
             try:
                 if author == self.session.get_host():
@@ -277,11 +306,11 @@ class PenCog(commands.Cog):
             await ctx.send('Error: need more arguments to kick players.')
             return
         if self.session:
-            host = await commands.UserConverter().convert(ctx, str(self.session.get_host()))
+            host = ctx.guild.get_member(self.session.get_host())
             if self.session.get_state() == GameState.CREATED:
                 self.session.joining.acquire()
                 try:
-                    player = await commands.UserConverter().convert(ctx, str(args[0]))
+                    player = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
                     if self.session.get_host() == player.id:
                         await ctx.send('Error: Cannot kick host. Use the disband command instead.')
                         return
@@ -309,7 +338,7 @@ class PenCog(commands.Cog):
         if self.session:
             player_list = ''
             for player in self.session.get_players():
-                player_user = await commands.UserConverter().convert(ctx, str(player[0]))
+                player_user = ctx.guild.get_member(player[0])
                 player_list += f'{player_user.name}\n' 
             await ctx.send(player_list)
         else:
@@ -332,7 +361,7 @@ class PenCog(commands.Cog):
                     for quester in args:
                         self.session.nominating.acquire()
                         try:
-                            quester = await commands.UserConverter().convert(ctx, str(quester))
+                            quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
                             if self.session.add_quester(quester.id):
                                 await ctx.send(f'Added {quester.name} to quest.')
                             else:
@@ -361,7 +390,7 @@ class PenCog(commands.Cog):
                     for quester in args:
                         self.session.nominating.acquire()
                         try:
-                            quester = await commands.UserConverter().convert(ctx, str(quester))
+                            quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
                             if self.session.remove_quester(quester.id):
                                 await ctx.send(f'Removed {quester.name} from quest.')
                             else:
@@ -397,7 +426,7 @@ class PenCog(commands.Cog):
                 current_turn = self.session.get_turn()
                 player_order = ''
                 for i in range(0, self.session.get_num_players()):
-                    player_user = await commands.UserConverter().convert(ctx, str(self.session.get_players()[i][0]))
+                    player_user = ctx.guild.get_member(self.session.get_players()[i][0])
                     if i != current_turn:
                         player_order += f'{player_user.name}\n'
                     else:
@@ -417,7 +446,7 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: invalid number of arguments for \'lady\' command.')
             elif self.session.get_state() == GameState.NOMINATE:
                 if self.session.get_lady() == ctx.author.id:
-                    player_user = await commands.UserConverter().convert(ctx, str(args[0]))
+                    player_user = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
                     role = self.session.use_lady(player_user.id)
                     if role:
                         lady_message = f'{player_user.name} is '
@@ -432,55 +461,151 @@ class PenCog(commands.Cog):
             pass #No game in progress, deliberate separation for no message
 
     @commands.command(name='vote', help='Records responses for the current vote')
-    async def vote(self, ctx, *arg):
+    async def vote(self, ctx, *args):
         await ctx.send('\'vote\' command called')
-        if len(arg) > 1:
+        if len(args) > 1:
             await ctx.send('Error: too many arguments for vote command.')
         if self.session:
+            if not self.session.get_player(ctx.author.id):
+                await ctx.send('Error: you are not in this game!')
+                return
             if self.session.get_state() == GameState.TEAM_VOTE:
-                if arg[0]:
-                    user_vote = arg[0].lower()
+                if args[0]:
+                    user_vote = args[0].lower()
                 if self.session.get_voter(ctx.author.id):
                     await ctx.send('Error: you already voted!')
+                    return
                 user_vote = self.session.check_user_vote(user_vote)
                 if user_vote is None:
                     await ctx.send('Error: invalid vote string.')
                     return
                 self.session.voting.acquire()
                 try:
-                    print(user_vote.value)
-                    print(self.session.get_votes() + user_vote.value)
                     self.session.set_votes(self.session.get_votes() + user_vote.value)
                     self.session.get_voted().append(ctx.author.id)
                     if self.session.check_voted():
                         await ctx.send('Votes are done!')
-                        # delete vote command message by user
                         if(self.session.vote_result()):
                             await ctx.send('Vote passes. :)')
-                            self.session.set_state(GameState.QUESTING)
-                            self.session.set_doom_counter(0)
+                            await self.questing(ctx)
                         else:
                             if(self.session.get_doom_counter() == 5):
                                 await ctx.send('Doom counter is 5, vote passes anyway.')
-                                self.session.set_state(GameState.QUESTING)
-                                self.session.set_doom_counter(0)
+                                await self.questing(ctx)
                             else:
                                 await ctx.send('Vote fails. :(')
-                                self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                                 self.session.increment_doom_counter()
+                                self.session.set_state(GameState.NOMINATE) #from GameState.TEAM_VOTE
                         self.session.increment_turn()
+                        await self.turn(ctx)
                 finally:
                     self.session.voting.release()
             else:
-                ctx.send('No voting in progress.')
+                await ctx.send('No voting in progress.')
         else:
             pass #No game in progress, deliberate separation for no message
 
+    async def questing(self, ctx):
+        self.session.set_state(GameState.QUESTING)
+        quest = await self.start_quest(ctx)
+        if(quest[0]):
+            await ctx.send('Quest passes. :)')
+            self.session.increment_quest_passed()
+        else:
+            await ctx.send(f'Quest fails... by {quest[1]} fails. :(')
+            self.session.increment_quest_failed()
+
+        if self.session.get_current_quest()+1 >= 3 and self.session.get_add_lancelot():
+            swap_happened = self.session.lancelot_swap()
+            if swap_happened:
+                await ctx.send('Attention: Lancelots have been swapped!')
+        if self.session.get_current_quest() == 3: #4th quest
+            self.session.set_double_fail(self.session.get_settings()['DF'])    
+        if self.session.get_quests_passed() >= 3:
+            self.last_stand(ctx)
+        elif self.session.get_quests_failed() >= 3:
+            self.game_over(ctx, False) # Bad guys win
+        else:
+            self.session.increment_current_quest()
+            self.session.set_doom_counter(0)
+            self.session.set_state(GameState.NOMINATE)
+
+    async def start_quest(self, ctx):
+        for quester in self.session.get_questers():
+            self.session.questing.acquire()
+            try:
+                await self.quest_action(ctx, quester)
+            finally:
+                self.session.questing.release()
+        quest_tuple = (self.session.check_quest(), self.session.get_quest_result())
+        return quest_tuple
+
+    @commands.Cog.listener()
+    async def quest_action(self, ctx, quester):
+
+        member = ctx.guild.get_member(quester)        
+        await member.send('Add that 👍 or 👎 reaction to this message.')
+
+        def check(reaction, user):
+            return user == member and str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎'
+
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', check=check)
+            if reaction.emoji == '👎':
+                self.session.set_quest_result(self.session.get_quest_result() - 1)
+                #TODO: delete DM message with their reaction... or maybe not?
+            await member.send('I\'ve recorded your response. 👍')
+        except Exception as e:
+            print(e)
+
     @vote.error
-    async def debug_error(self, ctx, error):
+    async def vote_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):
             print('Error: vote command received no arguments.') #needs only 1 argument
         if isinstance(error, commands.TooManyArguments):
             print('Error: vote command received too many arguments.') #needs only 1 argument
         else:
             print(error)
+
+    async def last_stand(self, ctx):
+        self.session.set_state(GameState.LAST_STAND)
+        await ctx.send('One last chance for the bad guys to win. Assassinate Merlin!')
+
+    @commands.command(name='assassinate', help='Assassinates a player. Intended for Merlin.')
+    async def assassinate(self, ctx, *args):
+        if self.session:
+            if len(args) != 1:
+                await ctx.send('Insufficient number of arguments. Please target 1 player.')
+            elif self.session.get_state() == GameState.LAST_STAND:
+                role = self.session.get_role(ctx.author.id) 
+                if role == Role.ASSASSIN:
+                    target = ctx.guild.get_member(int(args[0]))
+                    if assassinate(target):
+                        await ctx.send(f'The assassination attempt succeeded!')
+                        await self.game_over(ctx, False)
+                    else:
+                        merlin = self.session.get_merlin()
+                        merlin_player = ctx.guild.get_member(int(merlin[0]))
+                        await ctx.send(f'The assassination attempt failed! {merlin_player} is Merlin!')
+                        await self.game_over(ctx, True)
+                else:
+                    await ctx.send(f'You are not the assassin!')
+            else:
+                await ctx.send(f'We are not on the last stand!')
+        else:
+            pass #No game in progress, deliberate separation for no message
+    
+    @assassinate.error
+    async def assassinate_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            print('Error: vote command received no arguments.') #needs only 1 argument
+        if isinstance(error, commands.TooManyArguments):
+            print('Error: vote command received too many arguments.') #needs only 1 argument
+        else:
+            print(error)
+
+    async def game_over(self, ctx, allegiance):
+        self.session.set_state(GameState.GAME_OVER)
+        await ctx.send(('Good','Bad')[allegiance] + 'guys win!') # ternary for printing out result of game
+        await ctx.send('Game over!')
+        #TODO: dispose session properly

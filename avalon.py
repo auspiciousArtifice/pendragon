@@ -194,7 +194,7 @@ class Session:
 
     def set_state(self, new_state):
         self.state = new_state
-    
+
     def set_quest_result(self, number):
         self.quest_result = number
 
@@ -388,13 +388,8 @@ class Session:
             # Concatenates good roles with bad roles, then shuffles and assigns to players
             roles = good_roles + evil_roles
             random.shuffle(roles)
-<<<<<<< HEAD
             for i in range(0,len(self.get_players())):
                   player_name = self.get_players()[i][0] # Will probably use set_roles function in the future, during some code cleanup
-=======
-            for i in range(0,len(self.get_players())): 
-                  player_name = self.get_players()[i][0]
->>>>>>> b5ad41c86ffc1f2f87f5bc1e3c27a9f521bab1ca
                   self.get_players()[i] = (player_name,roles.pop())
             players = self.get_players()
             random.shuffle(players) # This is to determine turn order

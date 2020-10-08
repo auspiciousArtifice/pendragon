@@ -25,8 +25,5 @@ async def on_ready():
         f'{guild.name}(id: {guild.id})'
     )
 
-    members = '\n - '.join([member.name for member in guild.members])
-    print(f'Guild Members:\n - {members}')
-
 bot.add_cog(PenCog(bot))
 bot.run(TOKEN)

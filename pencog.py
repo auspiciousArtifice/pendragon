@@ -8,6 +8,41 @@ class PenCog(commands.Cog):
         self.bot = bot
         self.session: Session = None
 
+    async def verify_dm(self, ctx):
+        '''
+        Tests if players in session allow DMs from bot (non-friends). Sends message with list of all players who have
+        incorrect DM permissions or message giving the ok.
+
+        ctx (Context): Context object for guild
+
+        Returns True if all players allow DMs, False otherwise.
+        '''
+
+        dm_failed = []
+        result = True
+        for player_id, _ in self.session.players:
+            player = self.bot.get_user(player_id)
+            try:
+                await player.send('This is a test of your DM permissions. If you received this message, great!')
+            except:
+                dm_failed.append(player)
+        if len(dm_failed) > 0:
+            result = False
+            message = ''
+            if len(dm_failed) == 1:
+                message += 'This person does not have their DMs open for the bot:\n'
+                message += str(dm_failed[0]) + '\n'
+            elif len(dm_failed) > 1:
+                message += 'These people don\'t have their DMs open for the bot:\n'
+                for player in dm_failed:
+                    message += str(player) + '\n'
+            message += 'Please change your DM permissions to allow messages from non-friends.'
+            await ctx.send(message)
+        else:
+            await ctx.send('All players received the DM! You\'re good to go!')
+
+        return result
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'We have logged in as {self.bot.user.name}')
@@ -17,7 +52,7 @@ class PenCog(commands.Cog):
         '''Sends message with link to rules of Avalon'''
         await ctx.send('Here is a link to the rules: https://tinyurl.com/ycf4jttk')
 
-    @commands.command(name='debug')
+    @commands.command(name='debug', help='Displays game info for given argument')
     async def debug(self, ctx, *args):
         '''Sends message with requested session variable data, should only be used for debugging'''
         await ctx.send('\'debug\' command called')
@@ -25,6 +60,8 @@ class PenCog(commands.Cog):
         #print(self.session)
         print(args)
         if self.session:
+            if len(args) == 0:
+                await ctx.send(f'No data requested. Please provide an argument supported in the documentation.')
             if args[0] == 'gamestate':
                 await ctx.send(f'Current GameState is {self.session.state.name}')
                 print(f'Current GameState is {self.session.state.name}')
@@ -54,11 +91,11 @@ class PenCog(commands.Cog):
             elif args[0] == 'turn':
                 await ctx.send(f'Current turn is {self.session.turn}')
                 print(f'Current turn is {self.session.turn}')
-            elif args[0] == 'set_role':
-                #self.session.set_questers_required(Roles[args[1]])
-                pass
+            # elif args[0] == 'set_role':
+            #     self.session.set_questers_required(Roles[args[1]])
+            #     pass
             elif args[0] == 'dummies':
-                for i in range(0, int(args[1])):
+                for _ in range(0, int(args[1])):
                     self.session.add_dummy(ctx.author.id)
             elif args[0] == 'dummy_questers':
                 if self.session.state == GameState.NOMINATE:
@@ -82,28 +119,10 @@ class PenCog(commands.Cog):
                     self.session.increment_turn()
                     await self.turn(ctx)
             elif args[0] == 'test_dm':
-                dm_failed = []
-                for player_id, _ in self.session.players:
-                    player = self.bot.get_user(player_id)
-                    try:
-                        await player.send('This is a test of your DM permissions. If you received this message, great!')
-                    except:
-                        dm_failed.append(player)
-                if len(dm_failed) > 0:
-                    message = ''
-                    if len(dm_failed) == 1:
-                        message += 'This person does not have their DMs open for the bot:\n'
-                        message += str(dm_failed[0]) + '\n'
-                    elif len(dm_failed) > 1:
-                        message += 'These people don\'t have their DMs open for the bot:\n'
-                        for player in dm_failed:
-                            message += str(player) + '\n'
-                    message += 'Please change your DM permissions to allow messages from non-friends.'
-                    await ctx.send(message)
-                else:
-                    await ctx.send('All players received the DM! You\'re good to go!')
+                await self.verify_dm(ctx)
             else:
-                print('Error: Invalid argument.')
+                await ctx.send(f'{args[0]} is not a recognized debug command. Please refer to the documentation for '
+                                + 'all possible debug args.')
         else:
             await ctx.send('No session to debug.')
 

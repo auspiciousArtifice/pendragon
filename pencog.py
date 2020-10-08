@@ -81,6 +81,27 @@ class PenCog(commands.Cog):
                         self.session.state = GameState.NOMINATE # from GameState.TEAM_VOTE
                     self.session.increment_turn()
                     await self.turn(ctx)
+            elif args[0] == 'test_dm':
+                dm_failed = []
+                for player_id, _ in self.session.players:
+                    player = self.bot.get_user(player_id)
+                    try:
+                        await player.send('This is a test of your DM permissions. If you received this message, great!')
+                    except:
+                        dm_failed.append(player)
+                if len(dm_failed) > 0:
+                    message = ''
+                    if len(dm_failed) == 1:
+                        message += 'This person does not have their DMs open for the bot:\n'
+                        message += str(dm_failed[0]) + '\n'
+                    elif len(dm_failed) > 1:
+                        message += 'These people don\'t have their DMs open for the bot:\n'
+                        for player in dm_failed:
+                            message += str(player) + '\n'
+                    message += 'Please change your DM permissions to allow messages from non-friends.'
+                    await ctx.send(message)
+                else:
+                    await ctx.send('All players received the DM! You\'re good to go!')
             else:
                 print('Error: Invalid argument.')
         else:
@@ -232,7 +253,7 @@ class PenCog(commands.Cog):
                             player_role = player[1] # gets role
                             role_name = player_role.name.lower().capitalize().replace('_',' ')
                             member = ctx.guild.get_member(player[0])
-                            await member.send(f'Your role for this game is: {player_role.name}.')
+                            await member.send(f'Your role for this game is: {role_name}.')
                             if player_role == Role.MERLIN:
                                 m_list = []
                                 for p in self.session.players:

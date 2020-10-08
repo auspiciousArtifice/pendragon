@@ -339,7 +339,7 @@ class PenCog(commands.Cog):
             player_list = ''
             for player in self.session.get_players():
                 player_user = ctx.guild.get_member(player[0])
-                player_list += f'{player_user.name}\n' 
+                player_list += f'{player_user.name}\n'
             await ctx.send(player_list)
         else:
             await ctx.send('No game session created yet.')
@@ -520,7 +520,7 @@ class PenCog(commands.Cog):
             if swap_happened:
                 await ctx.send('Attention: Lancelots have been swapped!')
         if self.session.get_current_quest() == 3: #4th quest
-            self.session.set_double_fail(self.session.get_settings()['DF'])    
+            self.session.set_double_fail(self.session.get_settings()['DF'])
         if self.session.get_quests_passed() >= 3:
             self.last_stand(ctx)
         elif self.session.get_quests_failed() >= 3:
@@ -543,8 +543,8 @@ class PenCog(commands.Cog):
     @commands.Cog.listener()
     async def quest_action(self, ctx, quester):
 
-        member = ctx.guild.get_member(quester)        
-        await member.send('Add that 👍 or 👎 reaction to this message.')
+        member = ctx.guild.get_member(quester)
+        await member.send('Add the 👍 or 👎 reaction to this message.')
 
         def check(reaction, user):
             return user == member and str(reaction.emoji) == '👍' or str(reaction.emoji) == '👎'
@@ -577,7 +577,7 @@ class PenCog(commands.Cog):
             if len(args) != 1:
                 await ctx.send('Insufficient number of arguments. Please target 1 player.')
             elif self.session.get_state() == GameState.LAST_STAND:
-                role = self.session.get_role(ctx.author.id) 
+                role = self.session.get_role(ctx.author.id)
                 if role == Role.ASSASSIN:
                     target = ctx.guild.get_member(int(args[0]))
                     if assassinate(target):
@@ -594,7 +594,7 @@ class PenCog(commands.Cog):
                 await ctx.send(f'We are not on the last stand!')
         else:
             pass #No game in progress, deliberate separation for no message
-    
+
     @assassinate.error
     async def assassinate_error(self, ctx, error):
         if isinstance(error, commands.MissingRequiredArgument):

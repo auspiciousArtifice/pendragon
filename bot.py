@@ -1,8 +1,12 @@
 import discord
 import os
+import logging
 from discord.ext import commands
 from dotenv import load_dotenv
 from pencog import PenCog
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')

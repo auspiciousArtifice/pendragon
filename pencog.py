@@ -277,21 +277,21 @@ class PenCog(commands.Cog):
                                 m_list = []
                                 for p in self.session.players:
                                     if self.session.get_role(p[0]).value < -1:
-                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_user = await ctx.guild.get_member(str(p[0]))
                                         m_list.append(p_user.name)
                                 await member.send(f'Here are the list of evil player(s) you can see: {m_list}')
                             elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.players:
                                     if self.session.get_role(p[0]).value < 0 and p != player:
-                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_user = await ctx.guild.get_member(str(p[0]))
                                         e_list.append(p_user.name)
                                 await member.send(f'Here are the other villain(s): {e_list}')
                             elif player_role == Role.PERCIVAL:
                                 p_list = []
                                 for p in self.session.players:
                                     if abs(self.session.get_role(p[0]).value) == 2:
-                                        p_user = await commands.UserConverter().convert(ctx, str(p[0]))
+                                        p_user = await ctx.guild.get_member(str(p[0]))
                                         p_list.append(p_user.name)
                                 if len(p_list) == 1:
                                     await member.send(f'{p_list[0]} is Merlin')
@@ -364,7 +364,11 @@ class PenCog(commands.Cog):
             if self.session.state == GameState.CREATED:
                 self.session.joining.acquire()
                 try:
-                    player = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
+                    # TODO: Test if you can get a mention from ctx.guild.get_member() rather than UserConverter()
+                    # TODO: delete the debug print below.
+                    print(str(args[0]))
+                    # player = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter()
+                    player = await ctx.guild.get_member(str(args[0]))
                     if self.session.host == player.id:
                         await ctx.send('Error: Cannot kick host. Use the disband command instead.')
                         return
@@ -377,7 +381,7 @@ class PenCog(commands.Cog):
                         else:
                             await ctx.send(f'Could not find {player.name} in session.')
                     else:
-                        await ctx.send(f'{host.name} is not the host! Cannot kick {player.name}.')
+                        await ctx.send(f'{ctx.author.name} is not the host! Cannot kick {player.name}.')
                 finally:
                     self.session.joining.release()
             else:
@@ -416,7 +420,8 @@ class PenCog(commands.Cog):
                     for quester in args:
                         self.session.nominating.acquire()
                         try:
-                            quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
+                            # quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
+                            quester = await ctx.guild.get_member(str[quester])
                             if self.session.add_quester(quester.id):
                                 await ctx.send(f'Added {quester.name} to quest.')
                             else:
@@ -445,7 +450,8 @@ class PenCog(commands.Cog):
                     for quester in args:
                         self.session.nominating.acquire()
                         try:
-                            quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
+                            # quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
+                            quester = await ctx.guild.get_member(str[quester])
                             if self.session.remove_quester(quester.id):
                                 await ctx.send(f'Removed {quester.name} from quest.')
                             else:
@@ -501,7 +507,8 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: invalid number of arguments for \'lady\' command.')
             elif self.session.state == GameState.NOMINATE:
                 if self.session.lady == ctx.author.id:
-                    player_user = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
+                    # player_user = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
+                    player_user = await ctx.guild.get_member(str(args[0]))
                     role = self.session.use_lady(player_user.id)
                     if role:
                         lady_message = f'{player_user.name} is '

@@ -263,8 +263,8 @@ class PenCog(commands.Cog):
         await ctx.send('\'begin\' command called')
         if self.session:
             if(ctx.author.id == self.session.host):
-                self.session.joining.acquire()
-                try:
+                if self.verify_dm(ctx):
+                    self.session.joining.acquire()
                     if self.session.start_game():
                         await ctx.send(f'{ctx.author.name}\'s game has begun!')
                         await self.turn(ctx)
@@ -299,8 +299,8 @@ class PenCog(commands.Cog):
                                     await member.send(f'One of these 2 is Merlin: {p_list}')
                     else:
                         await ctx.send('Game could not be started...')
-                finally:
-                    self.session.joining.release()
+                else:
+                    await ctx.send('Game could not be started, please fix DM permissions and try again.')
             else:
                 await ctx.send('You are not the host! You can\'t start the game.')
         else:

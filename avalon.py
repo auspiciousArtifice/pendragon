@@ -17,6 +17,12 @@ class Vote(Enum):
     YEA = 1
 
 class Role(Enum):
+    '''
+    Enum that represents the role of a player. Good guys have positive values, bad guys have non-positive values.
+
+    More details provided in comments of the class.
+    '''
+
     # Good Guy Roles (value > 0)
     GOOD_LANCELOT = 4
     PERCIVAL = 3    # Knows who Merlin is (if Morgana is in play, can't tell between Merlin and Morgana)

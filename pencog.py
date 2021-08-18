@@ -284,21 +284,21 @@ class PenCog(commands.Cog):
                                 m_list = []
                                 for p in self.session.players:
                                     if self.session.get_role(p[0]).value < -1:
-                                        p_user = await ctx.guild.get_member(str(p[0]))
+                                        p_user = ctx.guild.get_member(p[0])
                                         m_list.append(p_user.name)
                                 await member.send(f'Here are the list of evil player(s) you can see: {m_list}')
                             elif player_role.value < 0 and player_role.value != Role.EVIL_LANCELOT:
                                 e_list = []
                                 for p in self.session.players:
                                     if self.session.get_role(p[0]).value < 0 and p != player:
-                                        p_user = await ctx.guild.get_member(str(p[0]))
+                                        p_user = ctx.guild.get_member(p[0])
                                         e_list.append(p_user.name)
                                 await member.send(f'Here are the other villain(s): {e_list}')
                             elif player_role == Role.PERCIVAL:
                                 p_list = []
                                 for p in self.session.players:
                                     if abs(self.session.get_role(p[0]).value) == 2:
-                                        p_user = await ctx.guild.get_member(str(p[0]))
+                                        p_user = ctx.guild.get_member(p[0])
                                         p_list.append(p_user.name)
                                 if len(p_list) == 1:
                                     await member.send(f'{p_list[0]} is Merlin')

@@ -1,5 +1,12 @@
 from avalon import Session, GameState, Vote, Role
 from discord.ext import commands
+import logging
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
+
 
 # TODO: change await commands.UserConverter().convert(ctx, user_id) to ctx.guild.get_member(user_id)
 # TODO: change all current_quests+1 to instead initialize with current_quest = 1
@@ -355,6 +362,7 @@ class PenCog(commands.Cog):
     async def kick(self, ctx, *args):
         '''Attempts to remove player specified in arguments from game session'''
         await ctx.send('\'kick\' command called')
+        msg = ctx.message
         author = int(ctx.author.id)
         if len(args) < 1:
             await ctx.send('Error: need more arguments to kick players.')
@@ -366,9 +374,9 @@ class PenCog(commands.Cog):
                 try:
                     # TODO: Test if you can get a mention from ctx.guild.get_member() rather than UserConverter()
                     # TODO: delete the debug print below.
-                    print(str(args[0]))
-                    # player = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter()
-                    player = await ctx.guild.get_member(str(args[0]))
+                    logger.debug(args[0])
+                    member_id = msg.mentions[0].id
+                    player = ctx.guild.get_member(member_id)
                     if self.session.host == player.id:
                         await ctx.send('Error: Cannot kick host. Use the disband command instead.')
                         return
@@ -417,11 +425,12 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: attempting to add too many players to quest.')
                     return
                 else:
-                    for quester in args:
+                    mentions = ctx.message.mentions
+                    for user in mentions:
                         self.session.nominating.acquire()
                         try:
                             # quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
-                            quester = await ctx.guild.get_member(str[quester])
+                            quester = ctx.guild.get_member(user.id)
                             if self.session.add_quester(quester.id):
                                 await ctx.send(f'Added {quester.name} to quest.')
                             else:
@@ -447,11 +456,12 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: attempting to remove too many players from quest.')
                     return
                 else:
-                    for quester in args:
+                    mentions = ctx.message.mentions
+                    for user in mentions:
                         self.session.nominating.acquire()
                         try:
                             # quester = await commands.UserConverter().convert(ctx, str(quester)) # Converts mention so have to use UserConverter
-                            quester = await ctx.guild.get_member(str[quester])
+                            quester = ctx.guild.get_member(user.id)
                             if self.session.remove_quester(quester.id):
                                 await ctx.send(f'Removed {quester.name} from quest.')
                             else:
@@ -507,8 +517,9 @@ class PenCog(commands.Cog):
                     await ctx.send('Error: invalid number of arguments for \'lady\' command.')
             elif self.session.state == GameState.NOMINATE:
                 if self.session.lady == ctx.author.id:
+                    msg = ctx.message
+                    player_user = msg.mentions[0]
                     # player_user = await commands.UserConverter().convert(ctx, str(args[0])) # Converts mention so have to use UserConverter
-                    player_user = await ctx.guild.get_member(str(args[0]))
                     role = self.session.use_lady(player_user.id)
                     if role:
                         lady_message = f'{player_user.name} is '

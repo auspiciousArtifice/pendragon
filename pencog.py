@@ -473,8 +473,8 @@ class PenCog(commands.Cog):
         else:
             pass #No game in progress, deliberate separation for no message
 
-    @commands.command(name='startvote', help='Starts the voting for the current quest.')
-    async def startvote(self, ctx):
+    @commands.command(name='start_voting', help='Starts the voting for the current quest.')
+    async def start_voting(self, ctx):
         if self.session:
             if self.session.state == GameState.NOMINATE:
                 if self.session.king == ctx.author.id:
@@ -642,6 +642,7 @@ class PenCog(commands.Cog):
 
     async def last_stand(self, ctx):
         self.session.state = GameState.LAST_STAND
+        # TODO: Bot should reveal all the bad guys in a chat message. - Shamee
         await ctx.send('One last chance for the bad guys to win. Assassinate Merlin!')
 
     @commands.command(name='assassinate', help='Assassinates a player. Intended for Merlin.')
@@ -653,6 +654,8 @@ class PenCog(commands.Cog):
                 role = self.session.get_role(ctx.author.id)
                 if role == Role.ASSASSIN:
                     target = ctx.guild.get_member(int(args[0]))
+                    # TODO: Don't attempt to assassinate players not in the game? - Shamee
+                    # Also error handling for arguments that aren't a player.
                     if self.session.assassinate(target):
                         await ctx.send(f'The assassination attempt succeeded!')
                         await self.game_over(ctx, False)

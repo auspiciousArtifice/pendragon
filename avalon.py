@@ -2,7 +2,6 @@ import random
 import json
 from enum import Enum
 from threading import Lock
-from discord.ext import commands
 
 class GameState(Enum):
     CREATED = 0     # Game made, players can join and leave, game start goes to NOMINATE
@@ -43,7 +42,7 @@ class Role(Enum):
     # if abs(player_role.value) == 2 # Used by Percival, reveals Merlin (and Morgana if in play)
 
 class Session:
-    def __init__(self, host):
+    def __init__(self, host=None):
         self.host = int(host)
         self.players = []
         self.joining = Lock()

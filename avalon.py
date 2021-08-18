@@ -79,6 +79,12 @@ class Session:
         with open('settings.json') as json_file:
             self.settings = json.load(json_file)['game_configs'] # Currently sets settings to all settings in settings.json
 
+    class Player:
+        def __init__(self, name=None, id=None, role=None):
+            self.name = None
+            self.id = None
+            self.role = None
+
     @property
     def turn(self):
         return self.__turn % len(self.players)
@@ -92,41 +98,47 @@ class Session:
         return self.lady
 
     @lady.setter
-    def lady(self, player):
-        self.__lady = int(player)
+    def lady(self, player_id):
+        self.__lady = int(player_id)
 
     @property
     def king(self):
         return self.__king
 
     @king.setter
-    def king(self, player):
-        self.__king = int(player)
+    def king(self, player_id):
+        self.__king = int(player_id)
 
     def get_player(self, id):
         id = int(id)
         for i in range(0, len(self.players)):
-            player_id = int(self.players[i][0])
+            # player_id = int(self.players[i][0])
+            # if player_id == id:
+            #     return self.players[i]
+            player_id = self.players[i].id
             if player_id == id:
                 return self.players[i]
         return None
 
     def get_merlin(self):
         for i in range(0, len(self.players)):
-            role = self.players[i][1]
+            role = self.players[i].role
             if role == Role.MERLIN:
-                return self.players
+                return self.players[i]
         return None
 
     def get_role(self, player):
-        return self.get_player(player)[1]
+        return self.get_player(player).role
 
-    def set_role(self, id, role):
-        id = int(id)
-        for i in range(0, len(self.players)):
-            player_id = int(self.players[i][0])
-            if player_id == id:
-                self.players[i] = (id, role)
+    def set_role(self, player_id, player_role):
+        player_id = int(player_id)
+        # for i in range(0, len(self.players)):
+        #     player_id = int(self.players[i][0])
+        #     if player_id == id:
+        #         self.players[i] = (id, role)
+        current_player = self.get_player(player_id)
+        if current_player is not None:
+            current_player.role = player_role
 
     def num_players(self):
         return len(self.players)
@@ -170,7 +182,7 @@ class Session:
 
     def increment_turn(self):
         self.turn += 1
-        self.king = self.players[self.turn][0]
+        self.king = self.players[self.turn].id
         self.voted = []
         self.questers = []
         self.votes = 0
@@ -186,80 +198,82 @@ class Session:
         else:
             return None
 
-    def check_if_voted(self, player):
-        return player in self.voted
+    def check_if_voted(self, player_id):
+        return player_id in self.voted
 
     def tally_votes(self):
         return len(self.voted) == len(self.players) # True == Everyone Voted
 
-    def add_player(self, player):
+    def add_player(self, player_id):
         if self.state == GameState.CREATED:
-            if self.get_player(player) is None:
-                player = int(player)
-                player_tuple = (player, None)
-                self.players.append(player_tuple)
+            if self.get_player(player_id) is None:
+                # TODO: Add player name to arguments - Shamee
+                player = self.Player('', player_id)
+                self.players.append(player)
                 return True
         return False
 
-    def add_dummy(self, dummy):
-        dummy = int(dummy)
+    def add_dummy(self, dummy_id):
+        dummy_id = int(dummy_id)
         if self.state == GameState.CREATED:
-            player_tuple = (dummy, None)
-            self.players.append(player_tuple)
+            dummy_player = self.Player('Dummy', dummy_id)
+            self.players.append(dummy_player)
         else:
             print('Game state is not \'Created\'')
 
-    def remove_player(self, player):
+    def remove_player(self, player_id):
         if self.state == GameState.CREATED:
             for i in range(0, len(self.players)):
-                if int(self.players[i][0]) == int(player):
+                if int(self.players[i].id) == int(player_id):
                     del self.players[i]
                     return True
         return False
 
-    def add_quester(self, player):
+    def add_quester(self, player_id):
+        player_id = int(player_id)
         if self.state == GameState.NOMINATE:
-            if self.get_player(int(player)):
-                quester = int(player) in self.questers
+            if self.get_player(player_id):
+                quester = int(player_id) in self.questers
                 if not quester:
-                    self.questers.append(int(player))
+                    self.questers.append(player_id)
                     return True
         return False
 
     def dummy_questers(self):
+        # TODO: test this function - Shamee
         if self.state == GameState.NOMINATE:
             while len(self.questers) < self.questers_required:
-                self.questers.append(self.players[-1][0])
+                self.questers.append(self.players[-1].id)
         else:
             return False
 
-    def remove_quester(self, player):
+    def remove_quester(self, player_id):
         if self.state == GameState.NOMINATE:
             for i in range(0, len(self.questers)):
-                if self.questers[i] == int(player):
+                if self.questers[i] == int(player_id):
                     del self.questers[i]
                     return True
         return False
 
-    def add_voter(self, player):
+    def add_voter(self, player_id):
         if self.state == GameState.TEAM_VOTE:
-            voted = int(player) in self.voted
+            voted = int(player_id) in self.voted
             if not voted:
-                self.voted.append(int(player))
+                self.voted.append(int(player_id))
                 return True
         return False
 
-    def remove_voter(self, player):
+    def remove_voter(self, player_id):
         if self.state == GameState.TEAM_VOTE:
             for i in range(0, len(self.voted)):
-                if self.voted[i] == player:
+                if self.voted[i] == player_id:
                     del self.voted[i]
                     return True
         return False
 
-    def use_lady(self, player):
+    def use_lady(self, player_id):
         if self.state == GameState.NOMINATE:
-            return self.get_player(int(player))[1]
+            return self.get_player(int(player_id)).role > 0
 
     def check_quest(self):
         '''Returns result of quest, True means quest passed, False means quest failed'''
@@ -309,12 +323,13 @@ class Session:
             roles = good_roles + evil_roles
             random.shuffle(roles)
             for i in range(0,len(self.players)):
-                  player_name = self.players[i][0] # Will probably use set_roles function in the future, during some code cleanup
-                  self.players[i] = (player_name,roles.pop())
+                # TODO: remove deprecated line below
+                #   player_name = self.players[i][0] # Will probably use set_roles function in the future, during some code cleanup
+                self.players[i].role = roles.pop()
             players = self.players
             random.shuffle(players) # This is to determine turn order
-            self.king = players[0][0]
-            self.lady = players[len(players)-1][0]
+            self.king = players[0].id
+            self.lady = players[len(players)-1].id
             self.state = GameState.NOMINATE
             self.settings = game_settings # After number of players determined, sets settings to amount of players
             self.questers_required = game_settings['Q1']
@@ -327,12 +342,12 @@ class Session:
         if not swap: # Swap is false
             return False
         for i in range(0, len(self.players)):
-            if self.players[i][1] == Role.GOOD_LANCELOT:
+            if self.players[i].role == Role.GOOD_LANCELOT:
                 self.players[i] = (self.players[i][0], Role.EVIL_LANCELOT)
-            elif self.players[i][1] == Role.EVIL_LANCELOT:
+            elif self.players[i].role == Role.EVIL_LANCELOT:
                 self.players[i] = (self.players[i][0], Role.GOOD_LANCELOT)
         return True
 
     def assassinate(self, target):
         target_role = self.get_role(target)
-        return target_role == self.get_merlin()[1]
+        return target_role == self.get_merlin().role

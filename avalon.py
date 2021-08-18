@@ -81,9 +81,11 @@ class Session:
 
     class Player:
         def __init__(self, name=None, id=None, role=None):
-            self.name = None
-            self.id = None
-            self.role = None
+            self.name = name
+            self.id = id
+            self.role = role
+        def __repr__(self) -> str:
+            return f"{{Name: {self.name}, ID: {self.id}, Role: {self.role}}}"
 
     @property
     def turn(self):
@@ -212,6 +214,17 @@ class Session:
                 self.players.append(player)
                 return True
         return False
+    
+    def add_player(self, player_id, player_name):
+        if self.state == GameState.CREATED:
+            if self.get_player(player_id) is None:
+                # print(player_name)
+                # print(player_id)
+                player = self.Player(player_name, player_id)
+                # print(player, player_name, player_id)
+                self.players.append(player)
+                return True
+        return False
 
     def add_dummy(self, dummy_id):
         dummy_id = int(dummy_id)
@@ -255,21 +268,38 @@ class Session:
                     return True
         return False
 
-    def add_voter(self, player_id):
+    def start_voting(self):
+        if self.questers_required == len(self.questers):
+            self.state = GameState.TEAM_VOTE
+            return True
+        else:
+            return False
+
+    # def add_voter(self, player_id):
+    #     if self.state == GameState.TEAM_VOTE:
+    #         voted = int(player_id) in self.voted
+    #         if not voted:
+    #             self.voted.append(int(player_id))
+    #             return True
+    #     return False
+
+    def add_voter(self, player_id, player_vote):
         if self.state == GameState.TEAM_VOTE:
-            voted = int(player_id) in self.voted
-            if not voted:
+            if self.check_if_voted(player_id):
                 self.voted.append(int(player_id))
+                self.votes = self.votes + player_vote.value
                 return True
         return False
 
-    def remove_voter(self, player_id):
-        if self.state == GameState.TEAM_VOTE:
-            for i in range(0, len(self.voted)):
-                if self.voted[i] == player_id:
-                    del self.voted[i]
-                    return True
-        return False
+    # TODO: This function will literally never be used. 
+    # Why do we even need it? - Shamee    
+    # def remove_voter(self, player_id):
+    #     if self.state == GameState.TEAM_VOTE:
+    #         for i in range(0, len(self.voted)):
+    #             if self.voted[i] == player_id:
+    #                 del self.voted[i]
+    #                 return True
+    #     return False
 
     def use_lady(self, player_id):
         if self.state == GameState.NOMINATE:

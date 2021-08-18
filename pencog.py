@@ -468,8 +468,7 @@ class PenCog(commands.Cog):
         if self.session:
             if self.session.state == GameState.NOMINATE:
                 if self.session.king == ctx.author.id:
-                    if self.session.questers_required == len(self.session.questers):
-                        self.session.state = GameState.TEAM_VOTE
+                    if self.session.start_voting():
                         await ctx.send('Enough players have been nominated. Voting starts now.')
                     else:
                         await ctx.send('Not enough players to start vote.')

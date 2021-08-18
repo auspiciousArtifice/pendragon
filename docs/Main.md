@@ -90,7 +90,7 @@ The bot needs the following files to run.
 - `DISCORD_GUILD=<token>`
 
 `bot.py` - The main file to run the bot. Typically started with `python bot.py`.  
-`requirements.txt` - List of dependencies required for the bot.
+`requirements.txt` - List of dependencies required for the bot.  
 `avalon.py` - All game logic here.  
 `pencog.py` - Cog and Discord logic here. Used for sharding support later on.  
 `settings.json` - All default settings for game sessions. Number of players is the primary way of determining which config is used.  

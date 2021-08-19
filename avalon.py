@@ -81,11 +81,11 @@ class Session:
 
     class Player:
         def __init__(self, name=None, id=None, role=None):
-            self.name = name
+            self.Name = name
             self.id = id
-            self.role = role
+            self.Role = role
         def __repr__(self) -> str:
-            return f"{{Name: {self.name}, ID: {self.id}, Role: {self.role}}}"
+            return f"{{Name: {self.Name}, ID: {self.id}, Role: {self.Role}}}"
 
     @property
     def turn(self):
@@ -160,24 +160,35 @@ class Session:
     def toggle_lancelot(self):
         self.add_lancelot = not self.add_lancelot
 
-    def pass_quest(self):
-        self.quests_passed += 1
+    # DEBUG: Unneccessary function due to next_quest() - Shamee
+    # def pass_quest(self):
+    #     self.quests_passed += 1
 
-    def fail_quest(self):
-        self.quests_failed += 1
+    # DEBUG: Unneccessary function due to next_quest() - Shamee
+    # def fail_quest(self):
+    #     self.quests_failed += 1
 
+    # DEBUG: Unneccessary function due to next_quest() - Shamee
     # Don't think this is necessary given the next_quest() function
-    def increment_current_quest(self):
-        self.current_quest += 1
-        self.questers_required = self.settings[f'Q{self.current_quest+1}']
+    # def increment_current_quest(self):
+    #     self.current_quest += 1
+    #     self.questers_required = self.settings[f'Q{self.current_quest+1}']
 
     def next_quest(self, passed):
+        '''
+        Receives the result of the current quest, and increments the quest counter.
+        Also increments the quests passed or quests failed counters.
+        Also sets the number of questers required for the next quest from the settings.
+        '''
         if passed:
             self.quests_passed += 1
         else:
             self.quests_failed += 1
         self.current_quest += 1
         self.questers_required = self.settings[f'Q{self.current_quest+1}']
+
+    def reset_doom_counter(self):
+        self.doom_counter = 0
 
     def increment_doom_counter(self):
         self.doom_counter += 1
@@ -189,10 +200,21 @@ class Session:
         self.questers = []
         self.votes = 0
 
-    def vote_result(self):
+    def check_vote_result(self):
+        '''
+        Returns true if the vote passed.
+        Returns false if the vote failed.
+        (Breaking even in a vote is a fail.)
+        '''
         return self.votes > 0
 
     def check_user_vote(self, user_vote):
+        '''
+        Checks the user's vote string to see if it's a valid vote.
+        Returns Vote.YEA if it is a yes vote.
+        Returns Vote.NAY if it is a no vote.
+        Returns None if the string is not valid.
+        '''
         if(user_vote == 'yes' or user_vote == 'yea' or user_vote == 'y'):
             return Vote.YEA
         elif(user_vote == 'no' or user_vote == 'nay' or user_vote == 'n'):
@@ -201,12 +223,24 @@ class Session:
             return None
 
     def check_if_voted(self, player_id):
+        '''
+        Returns if player already voted. 
+        True means the player has already voted. 
+        False means the player has not voted yet.
+        '''
         return player_id in self.voted
 
     def tally_votes(self):
+        '''
+        Returns True if all players have voted.
+        Returns False otherwise.
+        '''
         return len(self.voted) == len(self.players) # True == Everyone Voted
 
     def add_player(self, player_id):
+        '''
+        Adds player to game with player id.
+        '''
         if self.state == GameState.CREATED:
             if self.get_player(player_id) is None:
                 # TODO: Add player name to arguments - Shamee
@@ -216,6 +250,9 @@ class Session:
         return False
     
     def add_player(self, player_id, player_name):
+        '''
+        Adds playet to game with player id and player name.
+        '''
         if self.state == GameState.CREATED:
             if self.get_player(player_id) is None:
                 # print(player_name)
@@ -235,6 +272,9 @@ class Session:
             print('Game state is not \'Created\'')
 
     def remove_player(self, player_id):
+        '''
+        Removes player from game.
+        '''
         if self.state == GameState.CREATED:
             for i in range(0, len(self.players)):
                 if int(self.players[i].id) == int(player_id):
@@ -285,7 +325,7 @@ class Session:
 
     def add_voter(self, player_id, player_vote):
         if self.state == GameState.TEAM_VOTE:
-            if self.check_if_voted(player_id):
+            if not self.check_if_voted(player_id):
                 self.voted.append(int(player_id))
                 self.votes = self.votes + player_vote.value
                 return True
@@ -305,21 +345,37 @@ class Session:
         if self.state == GameState.NOMINATE:
             return self.get_player(int(player_id)).role > 0
 
+    def decrement_quest_result(self):
+        self.quest_result = self.quest_result - 1
+
     def check_quest(self):
-        '''Returns result of quest, True means quest passed, False means quest failed'''
+        '''
+        Returns result of quest. 
+        True means quest passed.
+        False means quest failed
+        '''
         result = self.quest_result
+        if self.current_quest == 3:
+            self.double_fail = self.settings['DF']
         if self.double_fail:
-            return result <= -2
+            return not result <= -2
         else:
-            return result <= -1
+            return not result <= -1
 
     def start_game(self):
+        '''
+        Begins the game.
+        Sets state to NOMINATE.
+        Sets default settings according to number of players in game.
+        Sets roles based on selected settings.
+        '''
         if self.state == GameState.CREATED:
             if not str(len(self.players)) in self.settings:
                 return False
             game_settings = self.settings[str(len(self.players))]
-            ttl_evil_replacement = self.add_morgana + self.add_mordred + self.add_oberon + self.add_lancelot
-            if game_settings['EVIL']-1 < ttl_evil_replacement:
+            # TODO: Put all the role assignments and shuffling in their own functions! - Shamee
+            total_evil_replacement = self.add_morgana + self.add_mordred + self.add_oberon + self.add_lancelot
+            if game_settings['EVIL']-1 < total_evil_replacement:
                 return False
             # After game starts
             good_roles = [Role.MERLIN]
@@ -355,21 +411,24 @@ class Session:
             for i in range(0,len(self.players)):
                 # TODO: remove deprecated line below
                 #   player_name = self.players[i][0] # Will probably use set_roles function in the future, during some code cleanup
-                self.players[i].role = roles.pop()
+                self.players[i].Role = roles.pop()
             players = self.players
             random.shuffle(players) # This is to determine turn order
             self.king = players[0].id
             self.lady = players[len(players)-1].id
             self.state = GameState.NOMINATE
             self.settings = game_settings # After number of players determined, sets settings to amount of players
-            self.questers_required = game_settings['Q1']
+            self.questers_required = self.settings['Q1']
             return True
         else:
             return False
 
+    def end_game(self):
+        self.state = GameState.GAME_OVER
+
     def lancelot_swap(self):
         swap = self.lancelot_swaps.pop()
-        if not swap: # Swap is false
+        if not swap: # Swap is false and does not occur on this turn.
             return False
         for i in range(0, len(self.players)):
             if self.players[i].role == Role.GOOD_LANCELOT:
@@ -378,6 +437,6 @@ class Session:
                 self.players[i] = (self.players[i][0], Role.GOOD_LANCELOT)
         return True
 
-    def assassinate(self, target):
-        target_role = self.get_role(target)
+    def assassinate(self, target_id):
+        target_role = self.get_role(target_id)
         return target_role == self.get_merlin().role

@@ -2,20 +2,27 @@ name: pendragon
 channels:
   - defaults
 dependencies:
-  - ca-certificates=2020.7.22=0
-  - certifi=2020.6.20=py38_0
+  - astroid=2.6.6=py38hecd8cb5_0
+  - ca-certificates=2021.7.5=hecd8cb5_1
+  - certifi=2021.5.30=py38hecd8cb5_0
+  - isort=5.9.3=pyhd3eb1b0_0
+  - lazy-object-proxy=1.6.0=py38h9ed2024_0
   - libcxx=10.0.0=1
   - libedit=3.1.20191231=h1de35cc_1
   - libffi=3.3=hb1e8313_2
+  - mccabe=0.6.1=py38_1
   - ncurses=6.2=h0a44026_1
-  - openssl=1.1.1h=haf1e3a3_0
+  - openssl=1.1.1k=h9ed2024_0
   - pip=20.2.3=py38_0
+  - pylint=2.9.6=py38hecd8cb5_1
   - python=3.8.5=h26836e1_1
   - readline=8.0=h1de35cc_0
   - setuptools=50.3.0=py38h0dc7051_1
   - sqlite=3.33.0=hffcf06c_0
   - tk=8.6.10=hb0a8c7a_0
+  - toml=0.10.2=pyhd3eb1b0_0
   - wheel=0.35.1=py_0
+  - wrapt=1.12.1=py38haf1e3a3_1
   - xz=5.2.5=h1de35cc_0
   - zlib=1.2.11=h1de35cc_3
   - pip:

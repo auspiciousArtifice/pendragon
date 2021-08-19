@@ -1,0 +1,23 @@
+[{Name: player1, ID: 2143, Role: Role.GOOD_GUY}, {Name: player2, ID: 6931, Role: Role.ASSASSIN}, {Name: player5, ID: 9327, Role: Role.GOOD_GUY}, {Name: player3, ID: 5453, Role: Role.MERLIN}, {Name: player4, ID: 2091, Role: Role.EVIL_GUY}]
+
+1
+5
+player1
+player2
+player3
+player4
+player5
+3
+2143
+3
+6931
+6
+1
+y
+n
+y
+y
+y
+y
+f
+f

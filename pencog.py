@@ -580,8 +580,6 @@ class PenCog(commands.Cog):
             swap_happened = self.session.lancelot_swap()
             if swap_happened:
                 await ctx.send('Attention: Lancelots have been swapped!')
-        if self.session.current_quest == 3: #4th quest
-            self.session.double_fail = self.session.settings['DF']
         if self.session.quests_passed >= 3:
             self.last_stand(ctx)
         elif self.session.quests_failed >= 3:

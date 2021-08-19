@@ -3,17 +3,20 @@ import json
 from enum import Enum
 from threading import Lock
 
+
 class GameState(Enum):
-    CREATED = 0     # Game made, players can join and leave, game start goes to NOMINATE
-    NOMINATE = 1    # 'King' nominates team for current quest, goes to TEAM_VOTE
-    TEAM_VOTE = 2   # Everyone votes on nominated team, if pass go to QUESTING, else go back to NOMINATE
-    QUESTING = 3    # Nominated team chooses to pass/fail quest, if 3 quests passed, goes to LAST_STAND, else NOMINATE
+    CREATED = 0  # Game made, players can join and leave, game start goes to NOMINATE
+    NOMINATE = 1  # 'King' nominates team for current quest, goes to TEAM_VOTE
+    TEAM_VOTE = 2  # Everyone votes on nominated team, if pass go to QUESTING, else go back to NOMINATE
+    QUESTING = 3  # Nominated team chooses to pass/fail quest, if 3 quests passed, goes to LAST_STAND, else NOMINATE
     LAST_STAND = 4  # Assassin chooses player to kill, bad guys win if Merlin is killed
-    GAME_OVER = 5   # Can view stats from game, goes back to CREATED if wants new players else NOMINATE
+    GAME_OVER = 5  # Can view stats from game, goes back to CREATED if wants new players else NOMINATE
+
 
 class Vote(Enum):
     NAY = -1
     YEA = 1
+
 
 class Role(Enum):
     '''
@@ -24,22 +27,23 @@ class Role(Enum):
 
     # Good Guy Roles (value > 0)
     GOOD_LANCELOT = 4
-    PERCIVAL = 3    # Knows who Merlin is (if Morgana is in play, can't tell between Merlin and Morgana)
-    MERLIN = 2      # Knows all bad guys (except Oberon and Mordred if in play)
-    GOOD_GUY = 1    # No special properties
+    PERCIVAL = 3  # Knows who Merlin is (if Morgana is in play, can't tell between Merlin and Morgana)
+    MERLIN = 2  # Knows all bad guys (except Oberon and Mordred if in play)
+    GOOD_GUY = 1  # No special properties
     # Bad Guy Roles (value <= 0)
-    OBERON = 0      # Unknown to Merlin AND bad guys
-    MORDRED = -1    # Unknown to Merlin
-    MORGANA = -2    # Appears to be Merlin to Percival
-    ASSASSIN = -3   # Has chance to kill Merlin if 3 quests pass
+    OBERON = 0  # Unknown to Merlin AND bad guys
+    MORDRED = -1  # Unknown to Merlin
+    MORGANA = -2  # Appears to be Merlin to Percival
+    ASSASSIN = -3  # Has chance to kill Merlin if 3 quests pass
     EVIL_LANCELOT = -4
-    EVIL_GUY = -5   # No special properties
+    EVIL_GUY = -5  # No special properties
 
     # Simplified conditions for role checks
     # if player_role.value < -1 # Used by Merlin, reveals bad guys (except Mordred and Oberon if in play)
     # if player_role.value < 0 # Used by bad guys, reveals bad guys (except Oberon if in play)
     # if player_role.value > 0 # Good, unused (for good reason)
     # if abs(player_role.value) == 2 # Used by Percival, reveals Merlin (and Morgana if in play)
+
 
 class Session:
     def __init__(self, host=None):
@@ -52,7 +56,7 @@ class Session:
         self.__turn = 0
         self.state = GameState.CREATED
 
-        self.quests_passed  = 0
+        self.quests_passed = 0
         self.quests_failed = 0
         self.current_quest = 0
         self.double_fail = False
@@ -67,7 +71,7 @@ class Session:
         self.votes = 0
         self.voted = []
         self.voting = Lock()
-        self.merlins_watch_list= []
+        self.merlins_watch_list = []
         self.evil_watch_list = []
         self.add_percival = False
         self.add_morgana = False
@@ -75,9 +79,10 @@ class Session:
         self.add_oberon = False
         self.add_lancelot = False
         self.lancelot_swaps = []
-        self.settings = [] # Settings will change based on # of players after game starts
+        self.settings = []  # Settings will change based on # of players after game starts
         with open('settings.json') as json_file:
-            self.settings = json.load(json_file)['game_configs'] # Currently sets settings to all settings in settings.json
+            self.settings = json.load(json_file)[
+                'game_configs']  # Currently sets settings to all settings in settings.json
 
     @property
     def turn(self):
@@ -155,7 +160,7 @@ class Session:
     # Don't think this is necessary given the next_quest() function
     def increment_current_quest(self):
         self.current_quest += 1
-        self.questers_required = self.settings[f'Q{self.current_quest+1}']
+        self.questers_required = self.settings[f'Q{self.current_quest + 1}']
 
     def next_quest(self, passed):
         if passed:
@@ -163,7 +168,7 @@ class Session:
         else:
             self.quests_failed += 1
         self.current_quest += 1
-        self.questers_required = self.settings[f'Q{self.current_quest+1}']
+        self.questers_required = self.settings[f'Q{self.current_quest + 1}']
 
     def increment_doom_counter(self):
         self.doom_counter += 1
@@ -179,9 +184,9 @@ class Session:
         return self.votes > 0
 
     def check_user_vote(self, user_vote):
-        if(user_vote == 'yes' or user_vote == 'yea' or user_vote == 'y'):
+        if (user_vote == 'yes' or user_vote == 'yea' or user_vote == 'y'):
             return Vote.YEA
-        elif(user_vote == 'no' or user_vote == 'nay' or user_vote == 'n'):
+        elif (user_vote == 'no' or user_vote == 'nay' or user_vote == 'n'):
             return Vote.NAY
         else:
             return None
@@ -190,7 +195,7 @@ class Session:
         return player in self.voted
 
     def tally_votes(self):
-        return len(self.voted) == len(self.players) # True == Everyone Voted
+        return len(self.voted) == len(self.players)  # True == Everyone Voted
 
     def add_player(self, player):
         if self.state == GameState.CREATED:
@@ -275,7 +280,7 @@ class Session:
                 return False
             game_settings = self.settings[str(len(self.players))]
             ttl_evil_replacement = self.add_morgana + self.add_mordred + self.add_oberon + self.add_lancelot
-            if game_settings['EVIL']-1 < ttl_evil_replacement:
+            if game_settings['EVIL'] - 1 < ttl_evil_replacement:
                 return False
             # After game starts
             good_roles = [Role.MERLIN]
@@ -308,15 +313,16 @@ class Session:
             # Concatenates good roles with bad roles, then shuffles and assigns to players
             roles = good_roles + evil_roles
             random.shuffle(roles)
-            for i in range(0,len(self.players)):
-                  player_name = self.players[i][0] # Will probably use set_roles function in the future, during some code cleanup
-                  self.players[i] = (player_name,roles.pop())
+            for i in range(0, len(self.players)):
+                player_name = self.players[i][
+                    0]  # Will probably use set_roles function in the future, during some code cleanup
+                self.players[i] = (player_name, roles.pop())
             players = self.players
-            random.shuffle(players) # This is to determine turn order
+            random.shuffle(players)  # This is to determine turn order
             self.king = players[0][0]
-            self.lady = players[len(players)-1][0]
+            self.lady = players[len(players) - 1][0]
             self.state = GameState.NOMINATE
-            self.settings = game_settings # After number of players determined, sets settings to amount of players
+            self.settings = game_settings  # After number of players determined, sets settings to amount of players
             self.questers_required = game_settings['Q1']
             return True
         else:
@@ -324,7 +330,7 @@ class Session:
 
     def lancelot_swap(self):
         swap = self.lancelot_swaps.pop()
-        if not swap: # Swap is false
+        if not swap:  # Swap is false
             return False
         for i in range(0, len(self.players)):
             if self.players[i][1] == Role.GOOD_LANCELOT:

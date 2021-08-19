@@ -188,7 +188,7 @@ class PenCog(commands.Cog):
             if(ctx.author.id == self.session.host):
                 self.session.joining.acquire()
                 self.session.toggle_morgana()
-                await ctx.send('Morgana is now '+('removed','added')[self.session.add_morgana])
+                await ctx.send('Morgana is now '+('removed', 'added')[self.session.add_morgana])
                 self.session.joining.release()
             else:
                 await ctx.send('You are not the host! You can\'t add/remove Morgana.')
@@ -395,7 +395,7 @@ class PenCog(commands.Cog):
             else:
                 await ctx.send('Cannot kick anyone after the game has started.')
         else:
-            pass #No game in progress, deliberate separation for no message
+            pass    # No game in progress, deliberate separation for no message
 
 
     @commands.command(name='players', help='Lists the players in the current game session')

@@ -158,6 +158,7 @@ def mock_vote():
     else:
         return None # Not enough people voted
 
+
 def questing():
     game.state = GameState.QUESTING
     print('Quest begins!')
@@ -175,6 +176,7 @@ def questing():
         print(f'Quest fails... by {fails} fail{"s" if fails > 1 else ""}. :(')
     post_quest_resolve(quest_result)
 
+
 def post_quest_resolve(quest_result):
     game.next_quest(quest_result)
     if game.current_quest+1 >= 3 and game.add_lancelot:
@@ -189,6 +191,7 @@ def post_quest_resolve(quest_result):
         game.reset_doom_counter()
         game.state = GameState.NOMINATE
 
+
 def last_stand():
     game.state = GameState.LAST_STAND
     print('Bad guys: ')
@@ -196,7 +199,7 @@ def last_stand():
         if player.Role < 0:
             print(f'Name: {player.Name}, Role: {player.Role}')
     kill_id = input("Who are you choosing to assassinate? <id> ")
-    if(game.assassinate(kill_id)):
+    if game.assassinate(kill_id):
         print('Bad guys win, you have successfully assassinated Merlin.')
         game.end_game()
     else:

@@ -9,14 +9,14 @@ class PenCog(commands.Cog):
         self.session: Session = None
 
     async def verify_dm(self, ctx):
-        '''
+        """
         Tests if players in session allow DMs from bot (non-friends). Sends message with list of all players who have
         incorrect DM permissions or message giving the ok.
 
         ctx (Context): Context object for guild
 
         Returns True if all players allow DMs, False otherwise.
-        '''
+        """
 
         dm_failed = []
         result = True
@@ -49,12 +49,12 @@ class PenCog(commands.Cog):
 
     @commands.command(name='rules', help='Displays the rules of the game')
     async def rules(self, ctx):
-        '''Sends message with link to rules of Avalon'''
+        """Sends message with link to rules of Avalon"""
         await ctx.send('Here is a link to the rules: https://tinyurl.com/ycf4jttk')
 
     @commands.command(name='debug', help='Displays game info for given argument')
     async def debug(self, ctx, *args):
-        '''Sends message with requested session variable data, should only be used for debugging'''
+        """Sends message with requested session variable data, should only be used for debugging"""
         await ctx.send('\'debug\' command called')
         #await ctx.send(self.session)
         #print(self.session)
@@ -135,7 +135,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='gather', help='Starts setup process for game, players can join once this command is executed')
     async def gather(self, ctx):
-        '''Creates session, sets user as host, and allows players to join'''
+        """Creates session, sets user as host, and allows players to join"""
         #TODO: Mutex needed here to bind to text channel
         author_id = int(ctx.author.id)
         await ctx.send('\'gather\' command called')
@@ -145,7 +145,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='disband', help='Disbands current game session')
     async def disband(self, ctx):
-        '''Destroys sender\'s session if it exists'''
+        """Destroys sender\'s session if it exists"""
         author = int(ctx.author.id)
         await ctx.send('\'disband\' command called')
         if self.session:
@@ -160,7 +160,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='percival', help='Toggles whether Percival should be added or not. Off by default')
     async def percival(self, ctx):
-        '''Toggles the Percival option for sender\'s session if game hasn't started'''
+        """Toggles the Percival option for sender\'s session if game hasn't started"""
         await ctx.send('\'percival\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -175,7 +175,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='morgana', help='Toggles whether Morgana should be added or not. Off by default')
     async def morgana(self, ctx):
-        '''Toggles the Morgana option for sender\'s session if game hasn't started'''
+        """Toggles the Morgana option for sender\'s session if game hasn't started"""
         await ctx.send('\'morgana\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -190,7 +190,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='mordred', help='Toggles whether Mordred should be added or not. Off by default')
     async def mordred(self, ctx):
-        '''Toggles the Mordred option for sender\'s session if game hasn't started'''
+        """Toggles the Mordred option for sender\'s session if game hasn't started"""
         await ctx.send('\'mordred\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -205,7 +205,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='oberon', help='Toggles whether Oberon should be added or not. Off by default')
     async def oberon(self, ctx):
-        '''Toggles the Oberon option for sender\'s session if game hasn't started'''
+        """Toggles the Oberon option for sender\'s session if game hasn't started"""
         await ctx.send('\'oberon\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -220,7 +220,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='lancelot', help='Toggles whether Lancelots should be added or not. Off by default')
     async def lancelot(self, ctx):
-        '''Toggles the Lancelot option for sender\'s session if game hasn't started'''
+        """Toggles the Lancelot option for sender\'s session if game hasn't started"""
         await ctx.send('\'lancelot\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -235,7 +235,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='all_roles', help='Puts all roles into the game. Note: 1 villain role must be removed')
     async def all_roles(self, ctx):
-        '''Sets all role options to True for host\'s session if game hasn't started'''
+        """Sets all role options to True for host\'s session if game hasn't started"""
         await ctx.send('\'all_roles\' called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -259,7 +259,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='begin', help='Begins game session if enough players have joined')
     async def begin(self, ctx):
-        '''Starts host\'s game if it hasn\'t began yet, fails if session doesn\'t exist or if game started already'''
+        """Starts host\'s game if it hasn\'t began yet, fails if session doesn\'t exist or if game started already"""
         await ctx.send('\'begin\' command called')
         if self.session:
             if(ctx.author.id == self.session.host):
@@ -308,7 +308,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='join', help='Adds user to current game session')
     async def join(self, ctx):
-        '''Adds sender to current game session if it exists'''
+        """Adds sender to current game session if it exists"""
         await ctx.send('\'join\' command called')
         author = int(ctx.author.id)
         if self.session:
@@ -330,7 +330,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='leave', help='Removes user from current game session')
     async def leave(self, ctx):
-        '''Removes sender from current game session if the session exists and they are in the session'''
+        """Removes sender from current game session if the session exists and they are in the session"""
         await ctx.send('\'leave\' command called')
         author = int(ctx.author.id)
         if self.session:
@@ -353,7 +353,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='kick', help='Removes user from current game session')
     async def kick(self, ctx, *args):
-        '''Attempts to remove player specified in arguments from game session'''
+        """Attempts to remove player specified in arguments from game session"""
         await ctx.send('\'kick\' command called')
         author = int(ctx.author.id)
         if len(args) < 1:
@@ -392,7 +392,7 @@ class PenCog(commands.Cog):
 
     @commands.command(name='players', help='Lists the players in the current game session')
     async def players(self, ctx):
-        '''Sends message containing list of all players in the session'''
+        """Sends message containing list of all players in the session"""
         await ctx.send('\'players\' command called')
         if self.session:
             player_list = ''

@@ -112,6 +112,9 @@ class Session:
         self.__king = int(player_id)
 
     def get_player(self, id):
+        '''
+        Retrieves Player object via player_id.
+        '''
         id = int(id)
         for i in range(0, len(self.players)):
             # player_id = int(self.players[i][0])
@@ -123,16 +126,25 @@ class Session:
         return None
 
     def get_merlin(self):
+        '''
+        Retrieves Player object representing Merlin.
+        '''
         for i in range(0, len(self.players)):
             role = self.players[i].role
             if role == Role.MERLIN:
                 return self.players[i]
         return None
 
-    def get_role(self, player):
-        return self.get_player(player).role
+    def get_role(self, player_id):
+        '''
+        Retrieves player's role via player_id.
+        '''
+        return self.get_player(player_id).role
 
     def set_role(self, player_id, player_role):
+        '''
+        Sets player's role by provided player_id and role.
+        '''
         player_id = int(player_id)
         # for i in range(0, len(self.players)):
         #     player_id = int(self.players[i][0])
@@ -143,6 +155,9 @@ class Session:
             current_player.role = player_role
 
     def num_players(self):
+        '''
+        Returns number of players in game.
+        '''
         return len(self.players)
 
     def toggle_percival(self):
@@ -188,12 +203,24 @@ class Session:
         self.questers_required = self.settings[f'Q{self.current_quest+1}']
 
     def reset_doom_counter(self):
+        '''
+        Resets the doom counter to 0.
+        '''
         self.doom_counter = 0
 
     def increment_doom_counter(self):
+        '''
+        Increments the doom counter by 1.
+        '''
         self.doom_counter += 1
 
     def increment_turn(self):
+        '''
+        Increments the turn counter.
+        Also sets the new king (turn leader),
+        as well as empties the voted and questers array,
+        and sets the votes back to 0.
+        '''
         self.turn += 1
         self.king = self.players[self.turn].id
         self.voted = []
@@ -240,6 +267,8 @@ class Session:
     def add_player(self, player_id):
         '''
         Adds player to game with player id.
+        Returns true if successful, and false otherwise.
+        Will fail on duplicates.
         '''
         if self.state == GameState.CREATED:
             if self.get_player(player_id) is None:
@@ -251,7 +280,9 @@ class Session:
     
     def add_player(self, player_id, player_name):
         '''
-        Adds playet to game with player id and player name.
+        Adds player to game with player id and player name.
+        Returns true if successful, and false otherwise.
+        Will fail on duplicates.
         '''
         if self.state == GameState.CREATED:
             if self.get_player(player_id) is None:
@@ -283,6 +314,11 @@ class Session:
         return False
 
     def add_quester(self, player_id):
+        '''
+        Adds a quester based on a player id.
+        Returns true if successful, and false otherwise.
+        Will fail on duplicates.
+        '''
         player_id = int(player_id)
         if self.state == GameState.NOMINATE:
             if self.get_player(player_id):
@@ -301,6 +337,10 @@ class Session:
             return False
 
     def remove_quester(self, player_id):
+        '''
+        Removes a quester based on a player id.
+        Returns true if successful, and false otherwise.
+        '''
         if self.state == GameState.NOMINATE:
             for i in range(0, len(self.questers)):
                 if self.questers[i] == int(player_id):
@@ -309,6 +349,10 @@ class Session:
         return False
 
     def start_voting(self):
+        '''
+        Starts voting if the number of questers is
+        the same as the number required.
+        '''
         if self.questers_required == len(self.questers):
             self.state = GameState.TEAM_VOTE
             return True
@@ -324,6 +368,10 @@ class Session:
     #     return False
 
     def add_voter(self, player_id, player_vote):
+        '''
+        Adds a player to the voted list and adds their
+        player vote for the current nomination to the votes total.
+        '''
         if self.state == GameState.TEAM_VOTE:
             if not self.check_if_voted(player_id):
                 self.voted.append(int(player_id))
@@ -342,17 +390,24 @@ class Session:
     #     return False
 
     def use_lady(self, player_id):
+        '''
+        Invokes the Lady of the Lake to reveal a player's allegiance.
+        '''
         if self.state == GameState.NOMINATE:
             return self.get_player(int(player_id)).role > 0
 
     def decrement_quest_result(self):
+        '''
+        Adds a fail to the quest counter.
+        Will fail quest if too many fails are added.
+        '''
         self.quest_result = self.quest_result - 1
 
     def check_quest(self):
         '''
         Returns result of quest. 
         True means quest passed.
-        False means quest failed
+        False means quest failed.
         '''
         result = self.quest_result
         if self.current_quest == 3:
@@ -424,9 +479,16 @@ class Session:
             return False
 
     def end_game(self):
+        '''
+        Ends the game.
+        Sets the state of the game to GAME_OVER.
+        '''
         self.state = GameState.GAME_OVER
 
     def lancelot_swap(self):
+        '''
+        Swaps the roles of the two Lancelot players.
+        '''
         swap = self.lancelot_swaps.pop()
         if not swap: # Swap is false and does not occur on this turn.
             return False
@@ -438,5 +500,8 @@ class Session:
         return True
 
     def assassinate(self, target_id):
+        '''
+        Targets a player by id and attempts to assassinate Merlin.
+        '''
         target_role = self.get_role(target_id)
         return target_role == self.get_merlin().role

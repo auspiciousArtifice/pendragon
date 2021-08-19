@@ -66,11 +66,11 @@ def start_game():
             user_input = input("Which option would you like to choose? ")
             if user_input == "1":
                 mock_vote_result = mock_vote()
-                if mock_vote_result == True:
+                if mock_vote_result:
                     questing()
-                elif mock_vote_result == False:
+                elif not mock_vote_result:
                     pass
-                elif mock_vote_result == None:
+                elif mock_vote_result is None:
                     break
                 game.increment_turn()
                 break

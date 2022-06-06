@@ -10,3 +10,5 @@ edition = "2021"
 tokio = { version = "1.15.0", features = ["rt", "rt-multi-thread", "macros"] }
 serenity = { default-features = false, features = ["client", "gateway",
 "model", "rustls_backend"], version = "0.10.9" }
+serde = { version = "1.0" }
+serde_json = { version = "1.0" }

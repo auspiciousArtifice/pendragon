@@ -1,65 +1,39 @@
 {
-"game_configs" :
-    {
-     "5": {
-            "GOOD":3,
-            "EVIL":2,
-            "Q1":2,
-            "Q2":3,
-            "Q3":2,
-            "Q4":3,
-            "Q5":3,
-            "DF":false
-         },
+    "5": {
+        "good_count": 3,
+        "evil_count": 2,
+        "quester_count": [2, 3, 2, 3, 3],
+        "double_fail": false
+    },
     "6": {
-            "GOOD":4,
-            "EVIL":2,
-            "Q1":2,
-            "Q2":3,
-            "Q3":4,
-            "Q4":3,
-            "Q5":4,
-            "DF":false
-         },
+        "good_count": 4,
+        "evil_count": 2,
+        "quester_count": [2, 3, 4, 3, 4],
+        "double_fail": false
+    },
     "7": {
-            "GOOD":4,
-            "EVIL":3,
-            "Q1":2,
-            "Q2":3,
-            "Q3":3,
-            "Q4":4,
-            "Q5":4,
-            "DF":true
-         },
+        "good_count": 4,
+        "evil_count": 3,
+        "quester_count": [2, 3, 3, 4, 4],
+        "double_fail": true
+    },
     "8": {
-            "GOOD":5,
-            "EVIL":3,
-            "Q1":3,
-            "Q2":4,
-            "Q3":4,
-            "Q4":5,
-            "Q5":5,
-            "DF":true
-         },
+        "good_count": 5,
+        "evil_count": 3,
+        "quester_count": [3, 4, 4, 5, 5],
+        "double_fail": true
+    },
     "9": {
-            "GOOD":6,
-            "EVIL":3,
-            "Q1":3,
-            "Q2":4,
-            "Q3":4,
-            "Q4":5,
-            "Q5":5,
-            "DF":true
-         },
+        "good_count": 6,
+        "evil_count": 3,
+        "quester_count": [3, 4, 4, 5, 5],
+        "double_fail": true
+    },
     "10": {
-            "GOOD":6,
-            "EVIL":4,
-            "Q1":3,
-            "Q2":4,
-            "Q3":4,
-            "Q4":5,
-            "Q5":5,
-            "DF":true
-          }
+        "good_count": 6,
+        "evil_count": 4,
+        "quester_count": [3, 4, 4, 5, 5],
+        "double_fail": true
     }
 }
+    

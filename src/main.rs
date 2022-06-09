@@ -94,8 +94,6 @@ struct GameState {
     quests_failed: i32,
     current_quest: i32,
     doom_counter: i32,
-    questers_required: i32,
-    double_fail: bool,
     questers: HashSet<Player>,
     voted: HashSet<Player>,
 
@@ -165,10 +163,13 @@ impl GameState {
                 println!("{:?}", self.evil_watch_list);
 
                 // send out DMs 
+                // TODO: Once DM feature is done, add call here
+
                 // randomly select king
                 self.turn = self.rng.gen_range(0..self.players.len()) as i32;
 
                 // change stage to nominate
+                self.stage = Stage::Nominate;
             },
             Stage::Nominate => {
 
@@ -258,8 +259,6 @@ fn build_game() -> GameState {
         quests_failed: 0,
         current_quest: 0,
         doom_counter: 0,
-        questers_required: 0,
-        double_fail: false,
         questers: HashSet::new(),
         voted: HashSet::new(),
         merlins_watch_list: HashSet::new(),

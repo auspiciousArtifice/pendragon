@@ -66,7 +66,7 @@ impl Default for Role {
 struct GameConfig {
     good_count: i32,
     evil_count: i32,
-    quester_count: [i32; 5],
+    quester_count: [usize; 5],
     double_fail: bool,
 }
 
@@ -87,12 +87,12 @@ struct GameState {
     roles: Vec<Role>,
     stage: Stage,
 
-    turn: i32,
+    turn: usize,
     lady_index: i32,
 
     quests_passed: i32,
     quests_failed: i32,
-    current_quest: i32,
+    current_quest: usize,
     doom_counter: i32,
     questers: HashSet<UserId>,
     voted: HashSet<UserId>,
@@ -181,13 +181,15 @@ impl GameState {
                 // TODO: Once DM feature is done, add call here
 
                 // randomly select king
-                self.turn = thread_rng().gen_range(0..self.players.len()) as i32;
+                self.turn = thread_rng().gen_range(0..self.players.len());
 
                 // change stage to nominate
                 self.stage = Stage::Nominate;
             },
             Stage::Nominate => {
-
+                if self.questers.len() != self.config.quester_count[self.current_quest] {
+                    return Err(String::from("Can't continue to team voting without correct number of questers."));
+                }
                 // change state to TeamVote
                 self.stage = Stage::TeamVote;
             },
@@ -227,33 +229,23 @@ impl GameState {
         self.players.len() >= 5
     }
 
-    fn count_roles(&self, role_map: &HashMap<Role, bool>) -> i32 {
-        let mut count = 0;
-        for i in role_map.values() {
-            count += if *i { 1 } else { 0 };
+    fn increment_turn(&mut self) {
+        self.turn = (self.turn + 1) % self.players.len();
+    }
+
+    fn nominate_players(&mut self, ids: Vec<UserId>) -> Result<(), String> {
+        if self.stage != Stage::Nominate {
+            return Err(String::from("Attempted to nominate player to quest when not in nominate stage!"));
         }
-        count
+        if self.questers.len() + ids.len() > self.config.quester_count[self.current_quest] {
+            return Err(String::from("Attempted to add too many players to the quest!"));
+        }
+        for id in ids {
+            self.questers.insert(id);
+        }
+        Ok(())
     }
 
-    // fn include_roles(&mut self, 
-    //                 role_map: &mut HashMap<Role, bool>, 
-    //                 total_count: i32,
-    //                 default_role: Role) {
-    //     let mut count = 1;
-    //     for role in role_map.keys() {
-    //         if *role_map.get(role).unwrap() {
-    //             self.roles.push(*role);
-    //             count += 1;
-    //         }
-    //     }
-    //     for _ in count..total_count {
-    //         self.roles.push(default_role);
-    //     }
-    // }
-
-    fn nominate_player(&self, id: UserId) {
-
-    }
 }
 
 struct GameSession {

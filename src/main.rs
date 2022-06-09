@@ -126,17 +126,13 @@ impl GameState {
 
                 // Assign roles 
                 let special_evil_count = self.count_roles(&self.special_evil);
-                let special_good_count = self.count_roles(&self.special_good);
                 if special_evil_count > self.config.evil_count {
                     // TODO: Send message instead of printing
                     println!("Too many special evil roles!");
                     return Err(String::from("Attempted to start game with too many special evil roles"));
                 }
-                if special_good_count > self.config.good_count {
-                    // TODO: Send message instead of printing
-                    println!("Too many special good roles!");
-                    return Err(String::from("Attempted to start game with too many special good roles"));
-                }
+                // Don't need to check special good roles, since it's impossible
+                // to have more special good roles than the total number of good roles
                 let mut roles: Vec<Role> = vec![Role::Merlin, Role::Assassin];
                 self.include_roles(&mut roles, 
                                    &self.special_evil, 
@@ -315,12 +311,12 @@ impl EventHandler for Handler {
 async fn main() {
     // !!! Remove once done with testing 
     /***********************************/
-    let mut game: GameState = build_game();
+    let mut game_state: GameState = build_game();
     for i in 0..10 {
-        game.add_player(UserId(i));
+        game_state.add_player(UserId(i));
     }
     // TODO: Use this Result for logging and/or stopping the game without crashing the bot
-    game.next_stage();
+    game_state.next_stage();
     /***********************************/
 
     // let token = env::var("DISCORD_TOKEN")

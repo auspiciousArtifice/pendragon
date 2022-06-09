@@ -164,7 +164,9 @@ impl GameState {
                 }
                 self.players.shuffle(&mut self.rng);
                 println!("{:?}", self.players);
-
+                println!("{:?}", self.percival_watch_list);
+                println!("{:?}", self.merlins_watch_list);
+                println!("{:?}", self.evil_watch_list);
 
                 // send out DMs 
                 // randomly select king
@@ -314,8 +316,8 @@ async fn main() {
     // !!! Remove once done with testing 
     /***********************************/
     let mut game: GameState = build_game();
-    for _ in 0..10 {
-        game.add_player(UserId::default());
+    for i in 0..10 {
+        game.add_player(UserId(i));
     }
     // TODO: Use this Result for logging and/or stopping the game without crashing the bot
     game.next_stage();

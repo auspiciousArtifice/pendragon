@@ -56,11 +56,11 @@ impl Default for Role {
     fn default() -> Self { Role::GoodGuy }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-struct Player {
-    id: UserId,
-    role: Role,
-}
+// #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+// struct Player {
+//     id: UserId,
+//     role: Role,
+// }
 
 #[derive(Default, Deserialize, Debug)]
 struct GameConfig {
@@ -82,9 +82,9 @@ impl fmt::Display for GameConfig {
 }
 
 struct GameState {
-    rng: ThreadRng,
     config: GameConfig,
-    players: Vec<Player>,
+    players: Vec<UserId>,
+    roles: Vec<Role>,
     stage: Stage,
 
     turn: i32,
@@ -94,14 +94,13 @@ struct GameState {
     quests_failed: i32,
     current_quest: i32,
     doom_counter: i32,
-    questers: HashSet<Player>,
-    voted: HashSet<Player>,
+    questers: HashSet<UserId>,
+    voted: HashSet<UserId>,
 
-    merlins_watch_list: HashSet<Player>,
-    percival_watch_list: HashSet<Player>,
-    evil_watch_list: HashSet<Player>,
-    special_good: HashMap<Role, bool>,
-    special_evil: HashMap<Role, bool>,
+    merlins_watch_list: HashSet<UserId>,
+    percival_watch_list: HashSet<UserId>,
+    evil_watch_list: HashSet<UserId>,
+    special_roles: HashMap<Role, bool>,
 }
 
 impl GameState {
@@ -123,7 +122,18 @@ impl GameState {
                 }
 
                 // Assign roles 
-                let special_evil_count = self.count_roles(&self.special_evil);
+                let mut special_evil_count = 0; //self.count_evil(&self.special_roles);
+                let mut special_good_count = 0;
+                for (role, val) in &self.special_roles {
+                    if *val {
+                        let role_num = *role as i32;
+                        if role_num <= 0 {
+                            special_evil_count += 1;
+                        } else {
+                            special_good_count += 1;
+                        }
+                    }
+                }
                 if special_evil_count > self.config.evil_count {
                     // TODO: Send message instead of printing
                     println!("Too many special evil roles!");
@@ -131,33 +141,38 @@ impl GameState {
                 }
                 // Don't need to check special good roles, since it's impossible
                 // to have more special good roles than the total number of good roles
-                let mut roles: Vec<Role> = vec![Role::Merlin, Role::Assassin];
-                self.include_roles(&mut roles, 
-                                   &self.special_evil, 
-                                   self.config.evil_count, 
-                                   Role::EvilGuy);
-                self.include_roles(&mut roles, 
-                                   &self.special_good, 
-                                   self.config.good_count,
-                                   Role::GoodGuy);
+                self.roles = vec![Role::Merlin, Role::Assassin];
+                for (role, val) in &self.special_roles {
+                    if *val {
+                        self.roles.push(*role);
+                    }
+                }
+                for _ in special_good_count + 1..self.config.good_count {
+                    self.roles.push(Role::GoodGuy);
+                }
+                for _ in special_evil_count + 1..self.config.evil_count {
+                    self.roles.push(Role::EvilGuy);
+                }
+                // self.include_roles(&mut self.special_evil, self.config.evil_count, Role::EvilGuy);
+                // self.include_roles(&mut self.special_good, self.config.good_count, Role::GoodGuy);
 
-                self.players.shuffle(&mut self.rng);
-                roles.shuffle(&mut self.rng);
-                for (player, role) in self.players.iter_mut().zip(roles) {
-                    player.role = role;
+                self.players.shuffle(&mut thread_rng());
+                self.roles.shuffle(&mut thread_rng());
+                for i in 0..self.roles.len() {
+                    let role = self.roles[i];
                     let role_num = role as i32;
                     if role_num.abs() == 2 {
-                        self.percival_watch_list.insert(*player);
+                        self.percival_watch_list.insert(self.players[i]);
                     }
                     if role_num < 0 {
                         if role_num < -1 {
-                            self.merlins_watch_list.insert(*player);
+                            self.merlins_watch_list.insert(self.players[i]);
                         }
-                        self.evil_watch_list.insert(*player);
+                        self.evil_watch_list.insert(self.players[i]);
                     }
                 }
-                self.players.shuffle(&mut self.rng);
                 println!("{:?}", self.players);
+                println!("{:?}", self.roles);
                 println!("{:?}", self.percival_watch_list);
                 println!("{:?}", self.merlins_watch_list);
                 println!("{:?}", self.evil_watch_list);
@@ -166,25 +181,32 @@ impl GameState {
                 // TODO: Once DM feature is done, add call here
 
                 // randomly select king
-                self.turn = self.rng.gen_range(0..self.players.len()) as i32;
+                self.turn = thread_rng().gen_range(0..self.players.len()) as i32;
 
                 // change stage to nominate
                 self.stage = Stage::Nominate;
             },
             Stage::Nominate => {
 
+                // change state to TeamVote
+                self.stage = Stage::TeamVote;
             },
             Stage::TeamVote => {
 
+                // change state to Nominate if votes fails, questing otherwise
+                
             },
             Stage::Questing => {
 
+                // change state to Nominate, LastStand, or GameOver accordingly
             },
             Stage::LastStand => {
 
+                // change state to GameOver
             },
             Stage::GameOver => {
                 
+                // I dunno what to do here honestly lmao
             }
         }
 
@@ -196,10 +218,7 @@ impl GameState {
         if self.stage != Stage::Created {
             return Err(String::from("Attempted to add player to game that is already in progress!"));
         }
-        self.players.push(Player {
-            id,
-            role: Role::default(),
-        });
+        self.players.push(id);
 
         Ok(())
     }
@@ -216,21 +235,24 @@ impl GameState {
         count
     }
 
-    fn include_roles(&self, 
-                    roles: &mut Vec<Role>, 
-                    role_map: &HashMap<Role, bool>, 
-                    total_count: i32,
-                    default_role: Role) {
-        let mut count = 1;
-        for role in role_map.keys() {
-            if *role_map.get(role).unwrap() {
-                roles.push(*role);
-                count += 1;
-            }
-        }
-        for _ in count..total_count {
-            roles.push(default_role);
-        }
+    // fn include_roles(&mut self, 
+    //                 role_map: &mut HashMap<Role, bool>, 
+    //                 total_count: i32,
+    //                 default_role: Role) {
+    //     let mut count = 1;
+    //     for role in role_map.keys() {
+    //         if *role_map.get(role).unwrap() {
+    //             self.roles.push(*role);
+    //             count += 1;
+    //         }
+    //     }
+    //     for _ in count..total_count {
+    //         self.roles.push(default_role);
+    //     }
+    // }
+
+    fn nominate_player(&self, id: UserId) {
+
     }
 }
 
@@ -249,9 +271,9 @@ struct GameSession {
 
 fn build_game() -> GameState {
     GameState {
-        rng: rand::thread_rng(),
         config: GameConfig::default(),
         players: Vec::new(),
+        roles: Vec::new(),
         stage: Stage::Created,
         turn: 0,
         lady_index: 0,
@@ -264,11 +286,9 @@ fn build_game() -> GameState {
         merlins_watch_list: HashSet::new(),
         percival_watch_list: HashSet::new(),
         evil_watch_list: HashSet::new(),
-        special_good: HashMap::from([
+        special_roles: HashMap::from([
             (Role::Percival, false),
             (Role::GoodLancelot, false),
-        ]),
-        special_evil: HashMap::from([
             (Role::Morgana, false),
             (Role::Mordred, false),
             (Role::Oberon, false),

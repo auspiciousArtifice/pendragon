@@ -95,7 +95,7 @@ struct GameState {
     current_quest: usize,
     doom_counter: i32,
     questers: HashSet<UserId>,
-    voted: HashSet<UserId>,
+    votes: HashMap<UserId, Vote>,
 
     merlins_watch_list: HashSet<UserId>,
     percival_watch_list: HashSet<UserId>,
@@ -122,8 +122,7 @@ impl GameState {
                 }
 
                 // Assign roles 
-                let mut special_evil_count = 0; //self.count_evil(&self.special_roles);
-                let mut special_good_count = 0;
+                let (mut special_evil_count, mut special_good_count) = (0, 0); //self.count_evil(&self.special_roles);
                 for (role, val) in &self.special_roles {
                     if *val {
                         let role_num = *role as i32;
@@ -194,8 +193,25 @@ impl GameState {
                 self.stage = Stage::TeamVote;
             },
             Stage::TeamVote => {
+                for player in &self.players {
+                    if !self.votes.contains_key(player) {
+                        return Err(String::from("Not all players have voted yet!"));
+                    }
+                }
 
-                // change state to Nominate if votes fails, questing otherwise
+                // Result will be positive if majority vote for team
+                let result: i32 = self.votes.values().map(|x| match *x {
+                    Vote::Yea => 1,
+                    Vote::Nay => -1,
+                }).sum();
+
+                // change state to Nominate or Game Over if votes fails, questing otherwise
+                if result > 0 {
+                    self.stage = Stage::Questing;
+                } else {
+                    self.doom_counter += 1;
+                    self.stage = if self.doom_counter == 5 { Stage::GameOver } else {Stage::Nominate };
+                }
                 
             },
             Stage::Questing => {
@@ -205,6 +221,7 @@ impl GameState {
             Stage::LastStand => {
 
                 // change state to GameOver
+                self.stage = Stage::GameOver
             },
             Stage::GameOver => {
                 
@@ -219,6 +236,8 @@ impl GameState {
     fn add_player(&mut self, id: UserId) -> Result<(), String> {
         if self.stage != Stage::Created {
             return Err(String::from("Attempted to add player to game that is already in progress!"));
+        } else if self.players.contains(&id) {
+            return Err(String::from("Attemped to add player to game that is already in the game!"));
         }
         self.players.push(id);
 
@@ -274,7 +293,7 @@ fn build_game() -> GameState {
         current_quest: 0,
         doom_counter: 0,
         questers: HashSet::new(),
-        voted: HashSet::new(),
+        votes: HashMap::new(),
         merlins_watch_list: HashSet::new(),
         percival_watch_list: HashSet::new(),
         evil_watch_list: HashSet::new(),

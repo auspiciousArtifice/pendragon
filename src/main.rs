@@ -213,6 +213,9 @@ impl GameState {
                     self.stage = if self.doom_counter == 5 { Stage::GameOver } else {Stage::Nominate };
                 }
                 
+                self.increment_turn();
+                // Clear votes, so the map can be reused for next stage
+                self.votes.clear();
             },
             Stage::Questing => {
 
@@ -262,6 +265,16 @@ impl GameState {
         for id in ids {
             self.questers.insert(id);
         }
+        Ok(())
+    }
+
+    fn vote(&mut self, id: UserId, vote: Vote) -> Result<(), String> {
+        if self.votes.contains_key(&id) {
+            return Err(String::from("User has already voted!"));
+        }
+
+        self.votes.insert(id, vote);
+
         Ok(())
     }
 

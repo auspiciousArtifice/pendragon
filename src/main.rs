@@ -304,6 +304,13 @@ impl GameState {
         Ok(())
     }
 
+    fn check_kill(self, id: UserId) -> bool {
+        let mut iter = self.players.iter();
+        let player_index = iter.position(|&x| x == id).unwrap();
+        let player_role = self.roles[player_index];
+        return player_role == Role::Merlin;
+    }
+
 }
 
 struct GameSession {
@@ -311,13 +318,6 @@ struct GameSession {
     involved_users: Vec<UserId>,
     state: GameState,
 }
-
-// fn build_player(id: UserId, role: Role) -> Player {
-//     Player {
-//         id,
-//         role,
-//     }
-// }
 
 fn build_game() -> GameState {
     GameState {

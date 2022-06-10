@@ -218,16 +218,42 @@ impl GameState {
                 self.votes.clear();
             },
             Stage::Questing => {
+                for player in &self.questers{
+                    if !self.votes.contains_key(player) {
+                        return Err(String::from("Not all questers have voted yet!"));
+                    }
+                }
+
+                let result: usize = self.votes.values().map(|x| match *x {
+                    Vote::Nay => 1,
+                    _ => 0,
+                }).sum();
+
+                let df_adjust = if self.config.double_fail { 1 } else { 0 };
+
+                let passed = result <= 0 + df_adjust;
+
+                if passed {
+                    self.quests_passed += 1;
+                } else {
+                    self.quests_failed += 1;
+                }
 
                 // change state to Nominate, LastStand, or GameOver accordingly
+                if self.quests_passed == 3 {
+                    self.stage = Stage::LastStand;
+                } else if self.quests_failed == 3 {
+                    self.stage = Stage::GameOver;
+                } else {
+                    self.stage = Stage::Nominate;
+                }
             },
             Stage::LastStand => {
-
+                // Not really much to do here???
                 // change state to GameOver
                 self.stage = Stage::GameOver
             },
             Stage::GameOver => {
-                
                 // I dunno what to do here honestly lmao
             }
         }

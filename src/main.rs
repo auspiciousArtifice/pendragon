@@ -56,12 +56,6 @@ impl Default for Role {
     fn default() -> Self { Role::GoodGuy }
 }
 
-// #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-// struct Player {
-//     id: UserId,
-//     role: Role,
-// }
-
 #[derive(Default, Deserialize, Debug)]
 struct GameConfig {
     good_count: i32,

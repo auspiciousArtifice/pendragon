@@ -57,6 +57,19 @@ struct AvalonFSM<S> {
 
     state: S,
 }
+
+struct Created {
+    tentative_players: Vec<UserId>,
+    special_roles: HashSet<Role>,
+}
+impl Created {
+    fn new() -> Self {
+        Created {
+            tentative_players: Vec::new(),
+            special_roles: HashSet::new(),
+        }
+    }
+}
 impl AvalonFSM<Created> {
     fn new(host: UserId) -> Self {
         AvalonFSM {
@@ -118,29 +131,53 @@ impl AvalonFSM<Created> {
         }
     }
 }
-struct Created {
-    tentative_players: Vec<UserId>,
-    special_roles: HashSet<Role>,
-}
-impl Created {
-    fn new() -> Self {
-        Created {
-            tentative_players: Vec::new(),
-            special_roles: HashSet::new(),
-        }
-    }
-}
 
 struct Nominate {
     doom_counter: usize,
-    nominated_players: HashSet<UserId>,
+    nominated: HashSet<UserId>,
 }
 impl Nominate {
     fn new(doom_counter: usize) -> Self {
         Nominate {
             doom_counter,
-            nominated_players: HashSet::new(),
+            nominated: HashSet::new(),
         }
+    }
+}
+impl AvalonFSM<Nominate> {
+    fn nominate_players(&mut self, ids: Vec<UserId>) -> Result<Vec<UserId>, String> {
+        if self.state.nominated.len() + ids.len() > self.config.quester_count[self.current_quest] {
+            return Err(String::from("Attempted to add too many players to the quest!")); 
+        }
+
+        let mut added: Vec<UserId> = Vec::new();
+        for id in ids {
+            self.state.nominated.insert(id);
+            added.push(id);
+        }
+        Ok(added)
+    }
+
+    fn dismiss_players(&mut self, ids: Vec<UserId>) -> (Vec<UserId>, Vec<UserId>) {
+        let mut removed: Vec<UserId> = Vec::new();
+        let mut not_removed: Vec<UserId> = Vec::new();
+        for id in ids {
+            match self.state.nominated.take(&id) {
+                Some(removed_id) => {
+                    removed.push(removed_id);
+                },
+                None => {
+                    not_removed.push(id);
+                }
+            }
+        }
+        (removed, not_removed)
+    }
+
+    fn dismiss_all(&mut self) -> Vec<UserId> {
+        let temp: Vec<UserId> = Vec::from_iter(self.state.nominated.clone());
+        self.state.nominated.clear();
+        temp
     }
 }
 impl TryFrom<AvalonFSM<Created>> for AvalonFSM<Nominate> {
@@ -240,23 +277,38 @@ impl TryFrom<AvalonFSM<Created>> for AvalonFSM<Nominate> {
 
 struct TeamVote {
     doom_counter: usize,
-    nominated_players: HashSet<UserId>,
+    nominated: HashSet<UserId>,
     votes: HashMap<UserId, Vote>,
 }
 impl TeamVote {
-    fn new(doom_counter: usize, nominated_players: HashSet<UserId>) -> Self {
+    fn new(doom_counter: usize, nominated: HashSet<UserId>) -> Self {
         TeamVote {
             doom_counter,
-            nominated_players,
+            nominated,
             votes: HashMap::new(),
         }
     }
 }
 impl TryFrom<AvalonFSM<Nominate>> for AvalonFSM<TeamVote> {
-    type Error = ();
+    type Error = String;
 
     fn try_from(val: AvalonFSM<Nominate>) -> Result<AvalonFSM<TeamVote>, Self::Error> {
+        if val.state.nominated.len() != val.config.quester_count[val.current_quest] {
+            return Err(String::from("Can't continue to team voting without correct number of nominations!"));
+        }
 
+        Ok(AvalonFSM {
+            host: val.host,
+            players: val.players,
+            roles: val.roles,
+            config: val.config,
+            turn_index: val.turn_index,
+            lady_index: val.lady_index,
+            quests_passed: val.quests_passed,
+            quests_failed: val.quests_failed,
+            current_quest: val.current_quest,
+            state: TeamVote::new(val.state.doom_counter, val.state.nominated),
+        })
     }
 }
 

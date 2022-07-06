@@ -1,6 +1,7 @@
 use rand::prelude::*;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use std::ops::Index;
 use std::{env, fmt, fs};
 
 use serenity::{
@@ -73,12 +74,59 @@ impl AvalonFSM<Created> {
     }
 }
 struct Created {
+    tentative_players: Vec<UserId>,
     special_roles: HashSet<Role>,
 }
 impl Created {
     fn new() -> Self {
         Created {
+            tentative_players: Vec::new(),
             special_roles: HashSet::new(),
+        }
+    }
+
+    fn add_player(&mut self, id: UserId) -> Result<UserId, String> {
+        if self.tentative_players.contains(&id) {
+            return Err(String::from("Attempted to add player to game that is already added!"));
+        }
+
+        self.tentative_players.push(id);
+        Ok(id)
+    }
+    
+    fn remove_player(&mut self, id: UserId) -> Result<UserId, String> {
+        match self.tentative_players.iter().position(|&x| x == id) {
+            Some(index) => {
+                return Ok(self.tentative_players.remove(index));
+            },
+            None => {
+                return Err(String::from("Attempted to remove player from game thtat wasn't added!"));
+            },
+        }
+    }
+
+    fn player_count_check(&self) -> bool {
+        let num_players = self.tentative_players.len();
+        num_players >= 5 && num_players <= 10
+    }
+
+    fn add_role(&mut self, role: Role) -> Result<Role, String> {
+        if self.special_roles.contains(&role) {
+            return Err(String::from(format!("{:?} has already been added to the game!", role)));
+        }
+
+        self.special_roles.insert(role);
+        Ok(role)
+    }
+
+    fn remove_role(&mut self, role: Role) -> Result<Role, String> {
+        match self.special_roles.take(&role) {
+            Some(removed_role) => {
+                return Ok(removed_role);
+            },
+            None => {
+                return Err(String::from(format!("{:?} has not been added to the game yet!", role)));
+            },
         }
     }
 }
@@ -202,6 +250,13 @@ impl TeamVote {
             nominated_players,
             votes: HashMap::new(),
         }
+    }
+}
+impl TryFrom<AvalonFSM<Nominate>> for AvalonFSM<TeamVote> {
+    type Error = ();
+
+    fn try_from(val: AvalonFSM<Nominate>) -> Result<AvalonFSM<TeamVote>, Self::Error> {
+
     }
 }
 
